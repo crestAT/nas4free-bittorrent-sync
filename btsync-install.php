@@ -4,6 +4,7 @@
  * btsync-install.php 
  * created 2013 by Andreas Schmidhuber
  *
+ * 0.6.1    C: download path for BTS application
  * 0.6      introduce scheduler
  * 0.5.7    correct display of boolean values from sync.conf file in btsync.php
  * 0.5.6    introduce sync.conf file
@@ -11,7 +12,7 @@
  * 0.5.4.1  backup management 
  * 0.5a     fetch update, remove startup error msg
 */
-$version = "v0.6";
+$version = "v0.6.1";
 $appname = "BitTorrent Sync";
 
 require_once("config.inc");
@@ -135,7 +136,7 @@ if ($installopt == 1 ) {
         if ($arch == "i386" || $arch == "x86") { $config['btsync']['architecture'] = "i386"; }
         else { $config['btsync']['architecture'] = "x64"; }
         echo ("\f");
-        exec ("fetch -o ".$cwdir." http://download-lb.utorrent.com/endpoint/btsync/os/FreeBSD-".$config['btsync']['architecture']."/track/stable");
+        exec ("fetch -o ".$cwdir." http://download-new.utorrent.com/endpoint/btsync/os/FreeBSD-".$config['btsync']['architecture']."/track/stable");
         exec ("cd ".$cwdir." && tar -xzvf stable");
         if ( !is_file ($cwdir.'btsync') ) { echo ('Executable file "btsync" not found, installation aborted!'); exit (3); }
         $config['btsync']['product_version'] = exec ($cwdir."btsync --help | awk '/".$appname."/ {print $3}'");
@@ -143,7 +144,7 @@ if ($installopt == 1 ) {
         if (!is_dir ($config['btsync']['backupfolder'])) { exec ("mkdir -p ".$config['btsync']['backupfolder']); }
         if (!is_dir ($config['btsync']['updatefolder'])) { exec ("mkdir -p ".$config['btsync']['updatefolder']); }
        	exec ("cp ".$cwdir."btsync ".$config['btsync']['backupfolder']."btsync-".$config['btsync']['product_version']);
-        $config['btsync']['size'] = exec ("fetch -s  http://download-lb.utorrent.com/endpoint/btsync/os/FreeBSD-".$config['btsync']['architecture']."/track/stable");
+        $config['btsync']['size'] = exec ("fetch -s  http://download-new.utorrent.com/endpoint/btsync/os/FreeBSD-".$config['btsync']['architecture']."/track/stable");
         if ($config['btsync']['product_version'] == '') { $config['btsync']['product_version'] = 'n/a'; }
         if ($config['btsync']['size'] == '') { $config['btsync']['size'] = 'n/a'; }
         write_config();

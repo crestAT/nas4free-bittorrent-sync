@@ -29,9 +29,9 @@ if (isset($_POST['install_new']) && $_POST['install_new']) {
 
 if (isset($_POST['fetch']) && $_POST['fetch']) {
     unset($input_errors);
-    $config['btsync']['size_new'] = exec ("fetch -s  http://download-lb.utorrent.com/endpoint/btsync/os/FreeBSD-".$config['btsync']['architecture']."/track/stable");
+    $config['btsync']['size_new'] = exec ("fetch -s  http://download-new.utorrent.com/endpoint/btsync/os/FreeBSD-".$config['btsync']['architecture']."/track/stable");
 //    if ($config['btsync']['size_new'] != $config['btsync']['size']) {
-        exec ("fetch -o ".$config['btsync']['updatefolder']." http://download-lb.utorrent.com/endpoint/btsync/os/FreeBSD-".$config['btsync']['architecture']."/track/stable");
+        exec ("fetch -o ".$config['btsync']['updatefolder']." http://download-new.utorrent.com/endpoint/btsync/os/FreeBSD-".$config['btsync']['architecture']."/track/stable");
         exec ("cd ".$config['btsync']['updatefolder']." && tar -xzvf stable");
         if ( !is_file ($config['btsync']['updatefolder'].'btsync') ) { $input_errors[] = gettext("Could not fetch new version!"); }
         else {
