@@ -28,4 +28,5 @@ CODE: SELECT ALL
 HISTORY
 -------
 Version Date		Description
+0.6		2014.01.01	introduce scheduler
 0.5.7	2013.12.22	first public release

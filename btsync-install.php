@@ -4,13 +4,14 @@
  * btsync-install.php 
  * created 2013 by Andreas Schmidhuber
  *
+ * 0.6      introduce scheduler
  * 0.5.7    correct display of boolean values from sync.conf file in btsync.php
  * 0.5.6    introduce sync.conf file
  * 0.5.5    log file filter
  * 0.5.4.1  backup management 
  * 0.5a     fetch update, remove startup error msg
 */
-$version = "v0.5.7";
+$version = "v0.6";
 $appname = "BitTorrent Sync";
 
 require_once("config.inc");
@@ -18,6 +19,27 @@ require_once("functions.inc");
 require_once("install.inc");
 require_once("util.inc");
 require_once("tui.inc");
+require("guiconfig.inc");
+
+function cronjob_process_updatenotification($mode, $data) {
+	global $config;
+	$retval = 0;
+	switch ($mode) {
+		case UPDATENOTIFY_MODE_NEW:
+		case UPDATENOTIFY_MODE_MODIFIED:
+			break;
+		case UPDATENOTIFY_MODE_DIRTY:
+			if (is_array($config['cron']['job'])) {
+				$index = array_search_ex($data, $config['cron']['job'], "uuid");
+				if (false !== $index) {
+					unset($config['cron']['job'][$index]);
+					write_config();
+				}
+			}
+			break;
+	}
+	return $retval;
+}
 
 $arch = $g['arch'];
 $platform = $g['platform'];
@@ -32,8 +54,10 @@ $amenuitem['2']['item'] = "Uninstall {$appname} extension";
 $result = tui_display_menu(" ".$appname." Extension ".$version." ", "Select Install or Uninstall", 60, 10, 6, $amenuitem, $installopt);
 if (0 != $result) { echo "\fInstallation aborted!\n"; exit(0);}
 
-// remove application section
 if ($installopt == 2 ) { 
+// kill running process
+    exec("killall -KILL btsync");
+// remove application section
     if ( is_array($config['rc']['postinit'] ) && is_array( $config['rc']['postinit']['cmd'] ) ) {
 		for ($i = 0; $i < count($config['rc']['postinit']['cmd']);) {
     		if (preg_match('/btsync/', $config['rc']['postinit']['cmd'][$i])) {	unset($config['rc']['postinit']['cmd'][$i]);} else{}
@@ -46,13 +70,43 @@ if ($installopt == 2 ) {
 		++$i;	
 		}
 	}
-	// unlink created  links
+// unlink created  links
 	if (is_dir ("/usr/local/www/ext/btsync")) {
 	foreach ( glob( "{$config['btsync']['rootfolder']}ext/*.php" ) as $file ) {
 	$file = str_replace("{$config['btsync']['rootfolder']}ext/", "/usr/local/www", $file);
 	if ( is_link( $file ) ) { unlink( $file ); } else {} }
 	mwexec ("rm -rf /usr/local/www/ext/btsync");
 	}
+// remove cronjobs
+    if (isset($config['btsync']['enable_schedule'])) {
+    	updatenotify_set("cronjob", UPDATENOTIFY_MODE_DIRTY, $config['btsync']['schedule_uuid_startup']);
+    	if (is_array($config['cron']['job'])) {
+    				$index = array_search_ex($data, $config['cron']['job'], "uuid");
+    				if (false !== $index) {
+    					unset($config['cron']['job'][$index]);
+    				}
+    			}
+    	write_config();
+    	updatenotify_set("cronjob", UPDATENOTIFY_MODE_DIRTY, $config['btsync']['schedule_uuid_closedown']);
+    	if (is_array($config['cron']['job'])) {
+    				$index = array_search_ex($data, $config['cron']['job'], "uuid");
+    				if (false !== $index) {
+    					unset($config['cron']['job'][$index]);
+    				}
+    			}
+    	write_config();
+        $retval = 0;
+        if (!file_exists($d_sysrebootreqd_path)) {
+        	$retval |= updatenotify_process("cronjob", "cronjob_process_updatenotification");
+        	config_lock();
+        	$retval |= rc_update_service("cron");
+        	config_unlock();
+        }
+        $savemsg = get_std_save_message($retval);
+        if ($retval == 0) {
+        	updatenotify_delete("cronjob");
+        }
+    }
 // remove application section from config.xml
 	if ( is_array($config['btsync'] ) ) { unset( $config['btsync'] ); write_config();}
 	echo "\f".$appname." entries removed. Remove files manually!\n"; 
@@ -81,7 +135,7 @@ if ($installopt == 1 ) {
         if ($arch == "i386" || $arch == "x86") { $config['btsync']['architecture'] = "i386"; }
         else { $config['btsync']['architecture'] = "x64"; }
         echo ("\f");
-        exec ("fetch -o ".$cwdir." http://download-lb.utorrent.com/endpoint/btsync/os/FreeBSD-".$config['btsync']['architecture']."/track/stable"); 
+        exec ("fetch -o ".$cwdir." http://download-lb.utorrent.com/endpoint/btsync/os/FreeBSD-".$config['btsync']['architecture']."/track/stable");
         exec ("cd ".$cwdir." && tar -xzvf stable");
         if ( !is_file ($cwdir.'btsync') ) { echo ('Executable file "btsync" not found, installation aborted!'); exit (3); }
         $config['btsync']['product_version'] = exec ($cwdir."btsync --help | awk '/".$appname."/ {print $3}'");
