@@ -28,6 +28,19 @@ CODE: SELECT ALL
 HISTORY
 -------
 Version Date		Description
+0.6.1.7	2014.10.06	C: btsync-installer: combined Install/Update option
+					C: Configuration: improvements for user change, take care about permissions
+					N: Configuration: VLAN/LAGG support -> taken from user Vasily1
+					N: Configuration: http/https switch
+					N: Configuration: external tick box => listen to 0.0.0.0
+					N: Configuration: all directly edited changes in sync.conf will be taken as they are 
+					N: Configuration: all newly introduced BTS options editable/choosable in Advanced section
+					N: Configuration: updated documentation URL
+					N: Maintainance => editable update URL for the BitTorrent Sync application, so we are future-proof  ;) 
+					N: Maintainance => switch to previuosely saved update URL, just to be sure ...
+					N: Maintainance => one-time download and installation of previous BTS application versions	
+					C: Logview => only two columns
+					N: Logview => new search field
 0.6.1	2014.08.27	C: download path for BTS application
 0.6		2014.01.01	introduce scheduler
 0.5.7	2013.12.22	first public release

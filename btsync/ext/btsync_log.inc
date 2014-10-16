@@ -49,17 +49,13 @@ $loginfo = array(
 	array(
 		"visible" => TRUE,
 		"desc" => gettext("Notifications"),
-		"logfile" => "{$config['btsync']['rootfolder']}.sync/sync.log",
+		"logfile" => "{$config['btsync']['storage_path']}/sync.log",
 		"filename" => "sync.log",
 		"type" => "plain",
-//		"pattern" => "/^(\S+\s+\S+)\s+(\S+)\s+(\S+)\s+(.*)$/",
-		"pattern" => "/^(\S+\s+\S+)\s+(\S+)\s+(.*)$/",
+		"pattern" => "/^(\S+\s+\S+)\s+(.*)$/",
 		"columns" => array(
 			array("title" => gettext("Date & Time"), "class" => "listlr", "param" => "nowrap=\"nowrap\"", "pmid" => 1),
-			array("title" => gettext("User"), "class" => "listr", "param" => "nowrap=\"nowrap\"", "pmid" => 2),
-//			array("title" => gettext("Level"), "class" => "listr", "param" => "nowrap=\"nowrap\"", "pmid" => 3),
-//			array("title" => gettext("Event"), "class" => "listr", "param" => "", "pmid" => 4)
-			array("title" => gettext("Event"), "class" => "listr", "param" => "", "pmid" => 3)
+			array("title" => gettext("Event"), "class" => "listr", "param" => "", "pmid" => 2)
 		)),
 	array(
 		"visible" => TRUE,
@@ -86,13 +82,15 @@ function log_get_contents($logfile, $type) {
 	switch ($type) {
 		case "clog":
         	$param .= "-n " . $config['syslogd']['nentries'];
-			exec("/usr/sbin/clog {$logfile} | /usr/bin/tail {$param}", $content);
+		    $filter_str = ($_POST['searchstring'] == '') ? "" : "| grep -i \"".htmlspecialchars($_POST['searchstring'])."\"";
+			exec("/usr/sbin/clog {$logfile} | /usr/bin/tail {$param} {$filter_str}", $content);
 			break;
 
 		case "plain":
 		    $filter_icf = (isset($config['btsync']['filter_icf']) ? "| grep -v \"Incoming connection from\"" : "");
-		    $filter_str = (!empty($config['btsync']['filter_str']) ? "| grep \"{$config['btsync']['filter_str']}\"" : "");
-			exec("/bin/cat {$logfile} | /usr/bin/tail {$param} {$filter_icf} {$filter_str}", $content);
+		    $filter = (!empty($config['btsync']['filter_str']) ? "| grep \"{$config['btsync']['filter_str']}\"" : "");
+		    $filter_str = ($_POST['searchstring'] == '') ? "" : "| grep -i \"".htmlspecialchars($_POST['searchstring'])."\"";
+			exec("/bin/cat {$logfile} | /usr/bin/tail {$param} {$filter_icf} {$filter} {$filter_str}", $content);
 	}
 
 	return $content;

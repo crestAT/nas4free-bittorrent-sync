@@ -1,7 +1,33 @@
 <?php
 /*
- * btsync_update.php
- * created 2013 by Andreas Schmidhuber
+    btsync_update.php
+    
+    Copyright (c) 2013, 2014, Andreas Schmidhuber
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright notice, this
+       list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright notice,
+       this list of conditions and the following disclaimer in the documentation
+       and/or other materials provided with the distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+    ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+    (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+    ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+    The views and conclusions contained in the software and documentation are those
+    of the authors and should not be interpreted as representing official policies,
+    either expressed or implied, of the FreeBSD Project.
  */
 require("auth.inc");
 require("guiconfig.inc");
@@ -9,6 +35,50 @@ require("guiconfig.inc");
 $pgtitle = array(gettext("Extensions"), $config['btsync']['appname']." ".$config['btsync']['version'], gettext("Maintenance"));
 
 $pconfig['product_version_new'] = !empty($config['btsync']['product_version_new']) ? $config['btsync']['product_version_new'] : "n/a";
+
+function fetch_file($file_url) {
+    global $config;
+    global $input_errors;
+    global $savemsg;
+    global $pconfig;
+        
+    unset($input_errors);
+    $config['btsync']['size_new'] = exec ("fetch -s {$file_url}");
+        exec ("fetch -o {$config['btsync']['updatefolder']}/stable {$file_url}");
+        exec ("cd ".$config['btsync']['updatefolder']." && tar -xzvf stable");
+        if ( !is_file ($config['btsync']['updatefolder'].'btsync') ) { $input_errors[] = gettext("Could not fetch file!"); }
+        else {
+            $pconfig['product_version_new'] = exec ("{$config['btsync']['updatefolder']}btsync --help | grep BitTorrent | cut -d ' ' -f3");
+            if ($pconfig['product_version_new'] == '') { $pconfig['product_version_new'] = 'n/a'; $input_errors[] = gettext("Could not retrieve new version!"); }
+            else {
+                if ("{$pconfig['product_version_new']}" == "{$config['btsync']['product_version']}") { $savemsg = gettext("No new version available!"); }
+                else {
+                    $savemsg = "New version {$pconfig['product_version_new']} available, push '".gettext('Install')."' button to install the new version!";
+                }
+                $config['btsync']['product_version_new'] = !empty($pconfig['product_version_new']) ? $pconfig['product_version_new'] : "n/a";
+                write_config();
+            }
+        }
+} 
+
+if (isset($_POST['save_url']) && $_POST['save_url']) {
+    if (!empty($_POST['download_url'])) {
+        $config['btsync']['previous_url'] = $config['btsync']['download_url'];
+        $config['btsync']['download_url'] = $_POST['download_url'];
+        write_config();
+        $savemsg = "New download URL saved!";
+    }
+}
+
+if (isset($_POST['revert_url']) && $_POST['revert_url']) {
+    $config['btsync']['download_url'] = $config['btsync']['previous_url'];
+    write_config();
+    $savemsg = "Previous download URL activated!";
+}
+
+if (isset($_POST['get_file']) && $_POST['get_file']) {
+    if (!empty($_POST['download_url'])) { fetch_file($_POST['download_url']); }
+}
 
 if (isset($_POST['install_new']) && $_POST['install_new']) {
     if (isset($config['btsync']['enable'])) { 
@@ -27,28 +97,7 @@ if (isset($_POST['install_new']) && $_POST['install_new']) {
     }	
 }
 
-if (isset($_POST['fetch']) && $_POST['fetch']) {
-    unset($input_errors);
-    $config['btsync']['size_new'] = exec ("fetch -s  http://download-new.utorrent.com/endpoint/btsync/os/FreeBSD-".$config['btsync']['architecture']."/track/stable");
-//    if ($config['btsync']['size_new'] != $config['btsync']['size']) {
-        exec ("fetch -o ".$config['btsync']['updatefolder']." http://download-new.utorrent.com/endpoint/btsync/os/FreeBSD-".$config['btsync']['architecture']."/track/stable");
-        exec ("cd ".$config['btsync']['updatefolder']." && tar -xzvf stable");
-        if ( !is_file ($config['btsync']['updatefolder'].'btsync') ) { $input_errors[] = gettext("Could not fetch new version!"); }
-        else {
-            $pconfig['product_version_new'] = exec ("{$config['btsync']['updatefolder']}btsync --help | grep BitTorrent | cut -d ' ' -f3");
-            if ($pconfig['product_version_new'] == '') { $pconfig['product_version_new'] = 'n/a'; $input_errors[] = gettext("Could not retrieve new version!"); }
-            else {
-                if ("{$pconfig['product_version_new']}" == "{$config['btsync']['product_version']}") { $savemsg = gettext("No new version available!"); }
-                else {
-                    $savemsg = "New version {$pconfig['product_version_new']} available, push \"".gettext('Install')."\" button to install the new version!";            
-                }
-                $config['btsync']['product_version_new'] = !empty($pconfig['product_version_new']) ? $pconfig['product_version_new'] : "n/a";
-                write_config();
-            } 
-        }
-//    }
-//    else { $savemsg = gettext("No new version available!"); }
-}
+if (isset($_POST['fetch']) && $_POST['fetch']) { fetch_file($config['btsync']['download_url']); }
 
 if ( isset( $_POST['delete_backup'] ) && $_POST['delete_backup'] ) {
     if ( !isset($_POST['installfile']) ) { $input_errors[] = gettext("No file selected to delete!") ; }
@@ -345,7 +394,7 @@ function enable_change(enable_change) {
 	<tr><td class="tabcont">
         <?php if (!empty($input_errors)) print_input_errors($input_errors);?>
         <?php if (!empty($savemsg)) print_info_box($savemsg);?>
-            <table width="100%" border="0" cellpadding="6" cellspacing="0">
+        <table width="100%" border="0" cellpadding="6" cellspacing="0">
             <?php html_titleline(gettext("Update"));?>
 			  <tr>
 			    <td class="vncell"><?=gettext("Status");?></td>
@@ -355,26 +404,33 @@ function enable_change(enable_change) {
 			<tr>
 				<td valign="top" class="vncell"><?=gettext("Latest version fetched from BitTorrent server");?>
 				</td>
-				<td class="vtable"><?=gettext($pconfig['product_version_new']." - push \"fetch\" button to check for new version");?>
+				<td class="vtable"><?=gettext($pconfig['product_version_new']." - push 'fetch' button to check for new version");?>
                     <input id="fetch" name="fetch" type="submit" class="formbtn" value="<?=gettext("Fetch");?>" onClick="return fetch_handler();" />
                     <?php if (("{$pconfig['product_version_new']}" != "{$config['btsync']['product_version']}") && ("{$pconfig['product_version_new']}" != "n/a")) { ?> 
                         <input id="install_new" name="install_new" type="submit" class="formbtn" value="<?=gettext("Install");?>" onClick="return fetch_handler();" />
                     <?php } ?>
 				</td>
 			</tr>
+            <?php html_inputbox("download_url", gettext("Download URL"), $config['btsync']['download_url'], "Define a new permanent application download URL or an URL for a one-time download of a previous version.<br />Previous download URL was <b>{$config['btsync']['previous_url']}</b>", false, 100);?>
+        </table>
+        <div id="remarks">
+            <?php html_remark("note_url", gettext("Note"), sprintf(gettext("Use 'Save URL' to change the download URL permanently, 'Revert URL' to activate a previously saved URL or 'Get File' to download a previous version (After the download push 'Install' to install the newly downloaded file).")));?>
+        </div>
+        <div id="submit">
+            <input id="save_url" name="save_url" type="submit" class="formbtn" value="<?=gettext("Save URL");?>" onClick="return fetch_handler();" />
+            <input id="revert_url" name="revert_url" type="submit" class="formbtn" value="<?=gettext("Revert URL");?>" onClick="return fetch_handler();" />
+            <input id="get_file" name="get_file" type="submit" class="formbtn" value="<?=gettext("Get File");?>" onClick="return fetch_handler();" />
+        </div>
+        <table width="100%" border="0" cellpadding="6" cellspacing="0">
 			<?php html_separator();?>
             <?php html_titleline(gettext("Backup"));?>
-            <tr>
-                <td valign="top" class="vncell"><?=gettext("Existing backups");?></td>
-                <td class="vtable">
-                    <?php
-                        $file_list = filelist("btsync-*");
-                        $backups = radiolist($file_list);
-                        if ( $backups ) { echo $backups; }
-                        else { echo sprintf(gettext("No backup found")); }
-                    ?>
-                </td>
-            </tr>
+            <?php
+                $file_list = filelist("btsync-*");
+                $backups = radiolist($file_list);
+                if ( $backups ) { $backup_list = $backups; }
+                else { $backup_list = "No backup found!"; }
+            ?>
+            <?php html_text("backup_list", gettext("Existing backups"), "{$backup_list}");?>
         </table>
         <div id="remarks">
             <?php html_remark("note", gettext("Note"), sprintf(gettext("Choose a backup to delete or install.")));?>
