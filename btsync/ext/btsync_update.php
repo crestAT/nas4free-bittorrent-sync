@@ -388,7 +388,6 @@ function enable_change(enable_change) {
 		<ul id="tabnav">
 			<li class="tabinact"><a href="btsync.php"><span><?=gettext("Configuration");?></span></a></li>
 			<li class="tabact"><a href="btsync_update.php"><span><?=gettext("Maintenance");?></span></a></li>
-			<li class="tabinact"><a href="btsync_update_extension.php"><span><?=gettext("Extension Maintenance");?></span></a></li>
 			<li class="tabinact"><a href="btsync_log.php"><span><?=gettext("Log");?></span></a></li>
 		</ul>
 	</td></tr>
@@ -396,7 +395,7 @@ function enable_change(enable_change) {
         <?php if (!empty($input_errors)) print_input_errors($input_errors);?>
         <?php if (!empty($savemsg)) print_info_box($savemsg);?>
         <table width="100%" border="0" cellpadding="6" cellspacing="0">
-            <?php html_titleline($config['btsync']['appname']." ".gettext("Update"));?>
+            <?php html_titleline(gettext("Update"));?>
 			  <tr>
 			    <td class="vncell"><?=gettext("Status");?></td>
                 <td class="vtable"><span name="procinfo" id="procinfo"></span></td>
@@ -415,7 +414,7 @@ function enable_change(enable_change) {
             <?php html_inputbox("download_url", gettext("Download URL"), $config['btsync']['download_url'], "Define a new permanent application download URL or an URL for a one-time download of a previous version.<br />Previous download URL was <b>{$config['btsync']['previous_url']}</b>", false, 100);?>
         </table>
         <div id="remarks">
-            <?php html_remark("note_url", gettext("Note"), sprintf(gettext("Use 'Save URL' to change the download URL permanently, 'Revert URL' to activate a previously saved URL or 'Get File' to download a previous version (after the download push 'Install' to install the newly downloaded file).")));?>
+            <?php html_remark("note_url", gettext("Note"), sprintf(gettext("Use 'Save URL' to change the download URL permanently, 'Revert URL' to activate a previously saved URL or 'Get File' to download a previous version (After the download push 'Install' to install the newly downloaded file).")));?>
         </div>
         <div id="submit">
             <input id="save_url" name="save_url" type="submit" class="formbtn" value="<?=gettext("Save URL");?>" onClick="return fetch_handler();" />

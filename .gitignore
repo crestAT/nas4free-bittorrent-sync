@@ -16,7 +16,6 @@ tmp/
 *.bak
 *.tar
 *.tgz
-create-tar.sh
 
 #############
 ## Windows detritus

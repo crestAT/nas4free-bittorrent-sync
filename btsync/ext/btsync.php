@@ -140,7 +140,6 @@ $debugmsg[] = "zuordnen: post: ".$_POST['device_name']." sync.conf: ".$sync_conf
             else { unset($sync_conf['webui']['dir_whitelist']); } 
             $sync_conf['config_refresh_interval'] = (is_numeric($_POST['config_refresh_interval']) ? (int)$_POST['config_refresh_interval'] : 3600);
             $sync_conf['disk_low_priority'] = isset($_POST['disk_low_priority']) ? true : false;
-            $sync_conf['listening_port'] = (is_numeric($_POST['listening_port']) ? (int)$_POST['listening_port'] : 0);
             $sync_conf['external_port'] = (is_numeric($_POST['external_port']) ? (int)$_POST['external_port'] : 0);
             $sync_conf['folder_defaults.delete_to_trash'] = isset($_POST['folder_defaults_delete_to_trash']) ? true : false;
             $sync_conf['folder_defaults.known_hosts'] = !empty($_POST['folder_defaults_known_hosts']) ? str_replace(" ", "", rtrim($_POST['folder_defaults_known_hosts'],',')) : "";
@@ -359,7 +358,6 @@ $pconfig['storage_path'] = !empty($sync_conf['storage_path']) ? $sync_conf['stor
 $pconfig['pid_file'] = !empty($sync_conf['pid_file']) ? $sync_conf['pid_file'] : $pconfig['storage_path']."sync.pid";
 $pconfig['config_refresh_interval'] = !empty($sync_conf['config_refresh_interval']) ? $sync_conf['config_refresh_interval'] : 3600;
 $pconfig['disk_low_priority'] = isset($sync_conf['disk_low_priority']) ? $sync_conf['disk_low_priority'] : true;
-$pconfig['listening_port'] = !empty($sync_conf['listening_port']) ? $sync_conf['listening_port'] : 0;
 $pconfig['external_port'] = !empty($sync_conf['external_port']) ? $sync_conf['external_port'] : 0;
 $pconfig['folder_defaults_delete_to_trash'] = isset($sync_conf['folder_defaults.delete_to_trash']) ? $sync_conf['folder_defaults.delete_to_trash'] : true;
 $pconfig['folder_defaults_known_hosts'] = !empty($sync_conf['folder_defaults.known_hosts']) ? $sync_conf['folder_defaults.known_hosts'] : "";
@@ -443,7 +441,6 @@ function enable_change(enable_change) {
 	document.iform.storage_pathbrowsebtn.disabled = endis;
     document.iform.config_refresh_interval.disabled = endis;
 	document.iform.disk_low_priority.disabled = endis;
-    document.iform.listening_port.disabled = endis;
     document.iform.external_port.disabled = endis;
     document.iform.folder_defaults_delete_to_trash.disabled = endis;
     document.iform.folder_defaults_known_hosts.disabled = endis;
@@ -480,7 +477,6 @@ function as_change() {
 			showElementById('dir_whitelist_tr','hide');
 			showElementById('config_refresh_interval_tr','hide');
     		showElementById('disk_low_priority_tr','hide');
-    		showElementById('listening_port_tr','hide');
     		showElementById('external_port_tr','hide');
     		showElementById('folder_defaults_delete_to_trash_tr','hide');
     		showElementById('folder_defaults_known_hosts_tr','hide');
@@ -514,7 +510,6 @@ function as_change() {
 			showElementById('dir_whitelist_tr','show');
 			showElementById('config_refresh_interval_tr','show');
     		showElementById('disk_low_priority_tr','show');
-    		showElementById('listening_port_tr','show');
     		showElementById('external_port_tr','show');
     		showElementById('folder_defaults_delete_to_trash_tr','show');
     		showElementById('folder_defaults_known_hosts_tr','show');
@@ -546,7 +541,6 @@ function as_change() {
 		<ul id="tabnav">
 			<li class="tabact"><a href="btsync.php"><span><?=gettext("Configuration");?></span></a></li>
 			<li class="tabinact"><a href="btsync_update.php"><span><?=gettext("Maintenance");?></span></a></li>
-			<li class="tabinact"><a href="btsync_update_extension.php"><span><?=gettext("Extension Maintenance");?></span></a></li>
 			<li class="tabinact"><a href="btsync_log.php"><span><?=gettext("Log");?></span></a></li>
 		</ul>
 	</td></tr>
@@ -600,7 +594,6 @@ function as_change() {
             <?php html_inputbox("dir_whitelist", gettext("Directory whitelist"), $pconfig['dir_whitelist'], gettext("Defines which directories (comma-separated - no other delimiters allowed) can be shown to user or have folders added, relative paths are relative to 'Directory root' setting."), false, 60);?>
             <?php html_inputbox("config_refresh_interval", gettext("config_refresh_interval"), $pconfig['config_refresh_interval'], sprintf(gettext("Controls how often settings are saved to storage. Can be adjusted to prevent HDD from low-power mode. Default is %d seconds."), 3600), false, 5);?>
             <?php html_checkbox("disk_low_priority", gettext("disk_low_priority"), $pconfig['disk_low_priority'], gettext("Sets priority for the file operations on disc."), "Default is true.", false);?>
-            <?php html_inputbox("listening_port", gettext("listening_port"), $pconfig['listening_port'], sprintf(gettext("Allows you to configure the port BitTorrent Sync will be using for incoming and outgoing UDP packets and incoming TCP connections. Default is %d (random value)."), 0), false, 5);?>
             <?php html_inputbox("external_port", gettext("external_port"), $pconfig['external_port'], sprintf(gettext("External (i.e. relative to NAT) port value. Default is %d (not set)."), 0), false, 5);?>
             <?php html_checkbox("folder_defaults_delete_to_trash", gettext("folder_defaults.delete_to_trash"), $pconfig['folder_defaults_delete_to_trash'], gettext("Default setting for folder preference 'Store deleted files in folder archive'."), "Default is true.", false);?>
             <?php html_inputbox("folder_defaults_known_hosts", gettext("folder_defaults.known_hosts"), $pconfig['folder_defaults_known_hosts'], sprintf(gettext("Default setting for folder preference 'Use predefined hosts'. Hosts should be entered as single line of IP:port pairs (or DNSname:port pairs) comma-separated (no other delimiters allowed)."), ""), false, 80);?>
