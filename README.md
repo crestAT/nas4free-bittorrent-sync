@@ -1,4 +1,3 @@
-<pre>
 BitTorrent Sync
 ---------------
 
@@ -15,11 +14,12 @@ INSTALLATION
 1. Prior to the installation make a backup of the N4F configuration via SYSTEM | BACKUP/RESTORE | Download configuration.
 2. Got to the N4F Webgui menu entry ADVANCED | COMMAND, copy the following line (change the path /mnt/DATA/extensions to 
     your needs - a persistant place where all extensions are/should be) paste it to the command field and push "Execute", this will copy the installer to your system:
-cd /mnt/DATA/extensions && fetch https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/bts_install.php && chmod 770 bts_install.php && echo "fetch OK"
+        cd /mnt/DATA/extensions && fetch https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/bts_install.php && chmod 770 bts_install.php && echo "fetch OK"
 3. After you see "fetch OK" execute the following line (changed the path /mnt/DATA/extensions to your persistant place), this will install the extension on your system: 
-/mnt/DATA/extensions/bts_install.php
+        /mnt/DATA/extensions/bts_install.php
 4. After successful completion you can access the extension from the WebGUI menu entry EXTENSIONS | BitTorrent Sync.
 
+<pre>
 HISTORY
 -------
 Version Date        Description
