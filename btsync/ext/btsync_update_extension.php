@@ -164,7 +164,7 @@ function fetch_handler() {
         <?php if (!empty($input_errors)) print_input_errors($input_errors);?>
         <?php if (!empty($savemsg)) print_info_box($savemsg);?>
         <table width="100%" border="0" cellpadding="6" cellspacing="0">
-            <?php html_titleline(gettext("Extension Update - 6.3.4"));?>
+            <?php html_titleline(gettext("Extension Update"));?>
 			<?php html_text("ext_version_current", gettext("Installed version"), $config['btsync']['version']);?>
 			<?php html_text("ext_version_server", gettext("Latest version"), $server_version);?>
 			<?php html_separator();?>
