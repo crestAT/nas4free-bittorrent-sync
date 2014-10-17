@@ -11,23 +11,19 @@ The extension
 
 INSTALLATION
 ------------
-1. Prior to the installation make a backup of the N4F configuration via SYSTEM | BACKUP/RESTORE | Download configuration
-2. Use the system console shell or connect via ssh to your N4F server - for the installation you must be logged in as root
-3. Change to a persistant place / data directory which should hold the extensions, in my case /mnt/DATA/extensions
-CODE: SELECT ALL
-cd /mnt/DATA/extensions
-4. Download the latest version of the extension from above and copy it to your extensions directory.
-5. Extract files and remove archive
-CODE: SELECT ALL
-tar xzvf btsync.tar.gz
-rm btsync.tar.gz
-6. Run installation script and choose option 1 to install (for update first uninstall and than install).
-CODE: SELECT ALL
-./btsync-install.php
+1. Prior to the installation make a backup of the N4F configuration via SYSTEM | BACKUP/RESTORE | Download configuration.
+2. Got to the N4F Webgui menu entry ADVANCED | COMMAND, copy the following line (change the path /mnt/DATA/extensions to 
+	your needs - a persistant place where all extensions are/should be) paste it to the command field and push "Execute" 
+	- this will copy the installer to your system:
+cd /mnt/DATA/extensions && fetch https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/bts_install.php && chmod 770 bts_install.php && echo "fetch OK"
+3. After you see "fetch OK" execute the following line (changed the path /mnt/DATA/extensions to your persistant place), this will install the extension on your system:
+/mnt/DATA/extensions/bts_install.php
+4. After successful completion you can access the extension from the WebGUI menu entry EXTENSIONS | BitTorrent Sync.
 
 HISTORY
 -------
 Version Date		Description
+0.6.3.6	2014.10.17	N: BTS installation, new tab "Extension Maintainance" for online extension update and remove via the WebGUI
 0.6.1.7	2014.10.06	C: btsync-installer: combined Install/Update option
 					C: Configuration: improvements for user change, take care about permissions
 					N: Configuration: VLAN/LAGG support -> taken from user Vasily1

@@ -79,6 +79,7 @@ function log_change() {
     		<ul id="tabnav">
     			<li class="tabinact"><a href="btsync.php"><span><?=gettext("Configuration");?></span></a></li>
     			<li class="tabinact"><a href="btsync_update.php"><span><?=gettext("Maintenance");?></span></a></li>
+    			<li class="tabinact"><a href="btsync_update_extension.php"><span><?=gettext("Extension Maintenance");?></span></a></li>
     			<li class="tabact"><a href="btsync_log.php"><span><?=gettext("Log");?></span></a></li>
     		</ul>
     	</td></tr>
