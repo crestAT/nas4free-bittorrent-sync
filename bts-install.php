@@ -75,10 +75,15 @@ if (($arch != "i386" && $arch != "amd64") && ($arch != "x86" && $arch != "x64"))
 if ($platform != "embedded" && $platform != "full" && $platform != "livecd" && $platform != "liveusb") { echo "unsupported platform!\n";  exit(1); }
 
 // install extension
-mwexec("fetch -o master.zip http://sourceforge.net/projects/nas4freeextensionbts/files/BitTorrent%20Sync/bts-v064.zip/download", true);
-exec("tar -xvf master.zip --exclude='.git*' --strip-components 1");
-exec("rm master.zip");
-exec("chmod -R 770 *");
+global $input_errors;
+global $savemsg;
+$return_val = mwexec("fetch -o master.zip http://sourceforge.net/projects/nas4freeextensionbts/files/BitTorrent%20Sync/bts-v064.zip/download", true);
+if ($return_val == 0) {
+    exec("tar -xvf master.zip --exclude='.git*' --strip-components 1");
+    exec("rm master.zip");
+    exec("chmod -R 770 *");
+}
+else { $input_errors[] = sprintf(gettext("Archive file %s not found, installation aborted!"), "master.zip"); }
 
 // install application on server
 if ( !isset($config['btsync']) || !is_array($config['btsync'])) {
