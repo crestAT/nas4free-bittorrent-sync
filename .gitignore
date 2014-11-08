@@ -6,7 +6,6 @@
 .SyncID
 .SyncIgnore
 .sync/
-*.
 _*/
 backup/
 update/
