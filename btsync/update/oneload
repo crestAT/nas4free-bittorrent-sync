@@ -1,0 +1,6 @@
+<?php
+require_once("config.inc");
+$install_dir = dirname($config['btsync']['rootfolder']);
+require_once("{$install_dir}/bts-install.php"); 
+unlink("{$config['btsync']['updatefolder']}oneload");
+?>

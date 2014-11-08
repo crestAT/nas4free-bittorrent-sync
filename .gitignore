@@ -8,7 +8,6 @@
 .sync/
 _*/
 backup/
-update/
 bin/
 tmp/
 *.tmp
