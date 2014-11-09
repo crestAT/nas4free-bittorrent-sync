@@ -77,12 +77,14 @@ if ($platform != "embedded" && $platform != "full" && $platform != "livecd" && $
 // install extension
 global $input_errors;
 global $savemsg;
-$return_val = mwexec("fetch -o master.zip http://sourceforge.net/projects/nas4freeextensionbts/files/BitTorrent%20Sync/bts-v064.zip/download", true);
+$install_dir = "./";
+if (isset($config['btsync']['rootfolder'])) { $install_dir = dirname($config['btsync']['rootfolder'])."/"; }
+$return_val = mwexec("fetch -o {$install_dir}master.zip 'http://sourceforge.net/projects/nas4freeextensionbts/files/BitTorrent%20Sync/bts-v064.zip/download'", true);
 if ($return_val == 0) {
-    $return_val = mwexec("tar -xvf master.zip --exclude='.git*' --strip-components 1", true);
+    $return_val = mwexec("tar -xf {$install_dir}master.zip -C {$install_dir} --exclude='.git*' --strip-components 1", true);
     if ($return_val == 0) {
-        exec("rm master.zip");
-        exec("chmod -R 770 *");
+        exec("rm {$install_dir}master.zip");
+        exec("chmod -R 770 {$install_dir}*");
     }
     else { $input_errors[] = sprintf(gettext("Archive file %s not found, installation aborted!"), "master.zip corrupt /"); }
 }
