@@ -79,7 +79,7 @@ global $input_errors;
 global $savemsg;
 $install_dir = "./";
 if (isset($config['btsync']['rootfolder'])) { $install_dir = dirname($config['btsync']['rootfolder'])."/"; }
-$return_val = mwexec("fetch -o {$install_dir}master.zip 'http://sourceforge.net/projects/nas4freeextensionbts/files/BitTorrent%20Sync/bts-v064.zip/download'", true);
+$return_val = mwexec("fetch -vo {$install_dir}master.zip 'http://sourceforge.net/projects/nas4freeextensionbts/files/BitTorrent%20Sync/bts-v064.zip/download'", true);
 if ($return_val == 0) {
     $return_val = mwexec("tar -xf {$install_dir}master.zip -C {$install_dir} --exclude='.git*' --strip-components 1", true);
     if ($return_val == 0) {
