@@ -41,6 +41,8 @@
 require_once("globals.inc");
 require_once("rc.inc");
 
+bindtextdomain("nas4free", "/usr/local/share/locale-bts");
+
 // Get the location of the log files (may be modified via rc.conf variables).
 $clogdir = rc_getenv_ex("clog_logdir", $g['varlog_path']);
 

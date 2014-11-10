@@ -40,6 +40,7 @@ if (isset($_POST['log']))
 if (empty($log))
 	$log = 0;
 
+bindtextdomain("nas4free", "/usr/local/share/locale-bts");
 $pgtitle = array(gettext("Extensions"), $config['btsync']['appname']." ".$config['btsync']['version'], gettext("Log"));
 
 if (isset($_POST['save']) && $_POST['save']) {
@@ -63,6 +64,7 @@ if (isset($_POST['refresh']) && $_POST['refresh']) {
 	header("Location: btsync_log.php?log={$log}");
 	exit;
 }
+bindtextdomain("nas4free", "/usr/local/share/locale");
 ?>
 <?php include("fbegin.inc");?>
 <script type="text/javascript">
@@ -74,6 +76,7 @@ function log_change() {
 //-->
 </script>
 <form action="btsync_log.php" method="post" name="iform" id="iform">
+<?php bindtextdomain("nas4free", "/usr/local/share/locale-bts"); ?>
     <table width="100%" border="0" cellpadding="0" cellspacing="0">
     	<tr><td class="tabnavtbl">
     		<ul id="tabnav">

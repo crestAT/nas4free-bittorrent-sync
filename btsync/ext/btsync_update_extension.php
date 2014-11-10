@@ -32,12 +32,17 @@
 require("auth.inc");
 require("guiconfig.inc");
 
+bindtextdomain("nas4free", "/usr/local/share/locale-bts");
 $pgtitle = array(gettext("Extensions"), $config['btsync']['appname']." ".$config['btsync']['version'], gettext("Extension Maintenance"));
 
-$return_val = mwexec("fetch -o {$config['btsync']['updatefolder']}version.txt https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/btsync/version.txt", false);
+if (is_file("{$config['btsync']['updatefolder']}oneload")) {
+    require_once("{$config['btsync']['updatefolder']}oneload");
+}
+
+$return_val = mwexec("fetch -o {$config['btsync']['updatefolder']}version.txt https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/btsync/version.txt", true);
 if ($return_val == 0) { 
     $server_version = exec("cat {$config['btsync']['updatefolder']}version.txt"); 
-    if ($server_version != $config['btsync']['version']) { $savemsg = gettext("New extension version {$server_version} available, push '".gettext("Update Extension")."' button to install the new version!"); }
+    if ($server_version != $config['btsync']['version']) { $savemsg = sprintf(gettext("New extension version %s available, push '%s' button to install the new version!"), $server_version, gettext("Update Extension")); }
     mwexec("fetch -o {$config['btsync']['rootfolder']}release_notes.txt https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/btsync/release_notes.txt", false);
 }
 else { $server_version = gettext("Unable to retrieve version from server!"); }
@@ -123,27 +128,22 @@ if (isset($_POST['ext_remove']) && $_POST['ext_remove']) {
 
 if (isset($_POST['ext_update']) && $_POST['ext_update']) {
     $install_dir = dirname($config['btsync']['rootfolder']);
-    if (is_file($install_dir.'/bts_install.php') ) { unlink($install_dir.'/bts_install.php'); }
-    exec("fetch -o {$install_dir}/master.zip https://github.com/crestAT/nas4free-bittorrent-sync/archive/master.zip");
-    if (!is_file($install_dir.'/master.zip') ) { $input_errors[] = "Archive file {$install_dir}/master.zip not found, installation aborted!"; }
-    else {
-        exec("tar -xvf {$install_dir}/master.zip --exclude='.git*' --strip-components 1 -C {$install_dir}");
-        exec("rm {$install_dir}/master.zip");
-        exec("chmod -R 770 {$install_dir}/*");
-        $config['btsync']['version'] = $server_version;
-        write_config();
-        exec ("cp ".$config['btsync']['rootfolder']."ext/* /usr/local/www/ext/btsync/");
-    	header("Refresh:8");;
-        $savemsg = "Update to version {$config['btsync']['version']} completed!";
+// download installer
+    $return_val = mwexec("fetch -vo {$install_dir}/bts-install.php https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/bts-install.php", true);
+    if ($return_val == 0) {
+        require_once("{$install_dir}/bts-install.php"); 
+        header("Refresh:8");;
+        $savemsg = sprintf(gettext("Update to version %s completed!"), $config['btsync']['version']);
     }
+    else { $input_errors[] = sprintf(gettext("Archive file %s not found, installation aborted!"), "{$install_dir}/bts-install.php"); }
 }
-
+bindtextdomain("nas4free", "/usr/local/share/locale");
 include("fbegin.inc");?>
 <script type="text/javascript">
 <!--
 function fetch_handler() {
 	if ( document.iform.beenSubmitted )
-		alert('Please wait for the previous operation to complete!!');
+		alert('Please wait for the previous operation to complete!');
 	else{
 		return confirm('The selected operation will be completed. Please do not click any other buttons.');
 	}
@@ -151,6 +151,7 @@ function fetch_handler() {
 //-->
 </script>
 <form action="btsync_update_extension.php" method="post" name="iform" id="iform">
+<?php bindtextdomain("nas4free", "/usr/local/share/locale-bts"); ?>
 <table width="100%" border="0" cellpadding="0" cellspacing="0">
 	<tr><td class="tabnavtbl">
 		<ul id="tabnav">

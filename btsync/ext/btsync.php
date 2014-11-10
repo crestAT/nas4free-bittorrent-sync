@@ -31,13 +31,19 @@
  */
 require("auth.inc");
 require("guiconfig.inc");
+
+// Dummy standard message gettext calls for xgettext retrieval!!!
+$dummy = gettext("The changes have been applied successfully.");
+$dummy = gettext("The configuration has been changed.<br />You must apply the changes in order for them to take effect.");
+$dummy = gettext("The following input errors were detected");
+
+bindtextdomain("nas4free", "/usr/local/share/locale-bts");
 $pgtitle = array(gettext("Extensions"), $config['btsync']['appname']." ".$config['btsync']['version']);
 
 if ( !isset( $config['btsync']['rootfolder']) && !is_dir( $config['btsync']['rootfolder'] )) {
-	$input_errors[] = "Extension installed with fault";
+	$input_errors[] = gettext("Extension installed with fault!");
 } 
 if (!isset($config['btsync']) || !is_array($config['btsync'])) $config['btsync'] = array();
-$debugmsg[] = "DEBUG START";
 
 /** 
  * Clean comments of json content and decode it with json_decode(). 
@@ -75,7 +81,7 @@ function change_perms($dir) {
     $path = rtrim($dir,'/');                                            // remove trailing slash
     if (strlen($path) > 1) {
         if (!is_dir($path)) {                                           // check if directory exists
-            $input_errors[] = "Directory $path doesn't exist!";
+            $input_errors[] = sprintf(gettext("Directory %s doesn't exist!"), $path);
         }
         else {
             $path_check = explode("/", $path);                          // split path to get directory names
@@ -94,21 +100,18 @@ function change_perms($dir) {
             }
             else
             {
-                $input_errors[] = sprintf(gettext("BitTorrent Sync needs at least read & execute permissions at the mount point for directory $path! Set the Read and Execute bits for Others (Access Restrictions | Mode) for the mount point /$path_check[1]/$path_check[2] (in <a href='%s'>Disks | Mount Point | Management</a>) and hit Save in order to take them effect."), "disks_mount.php");
+                $input_errors[] = sprintf(gettext("BitTorrent Sync needs at least read & execute permissions at the mount point for directory %s! Set the Read and Execute bits for Others (Access Restrictions | Mode) for the mount point %s (in <a href='disks_mount.php'>Disks | Mount Point | Management</a> or <a href='disks_zfs_dataset.php'>Disks | ZFS | Datasets</a>) and hit Save in order to take them effect."), $path, "/{$path_check[1]}/{$path_check[2]}");
             }
         }
     }
 }
 
 if (isset($_POST['save']) && $_POST['save']) {
-$debugmsg[] = "SAVE";
     unset($input_errors);
     $pconfig = $_POST;
     if (!empty($_POST['storage_path'])) { change_perms($_POST['storage_path']); }
 	if (empty($input_errors)) {
-$debugmsg[] = "no path errors";
 		if (isset($_POST['enable'])) {
-$debugmsg[] = "ENABLE";
             $config['btsync']['enable'] = isset($_POST['enable']) ? true : false;
             if ($_POST['who'] != $config['btsync']['who']) { exec("chown {$_POST['who']} {$config['btsync']['rootfolder']}*"); } // btsync & sync.conf
             $config['btsync']['who'] = $_POST['who'];
@@ -119,7 +122,6 @@ $debugmsg[] = "ENABLE";
             $config['btsync']['storage_path'] = !empty($_POST['storage_path']) ? $_POST['storage_path'] : $config['btsync']['rootfolder'].".sync/";
             $config['btsync']['storage_path'] = rtrim($config['btsync']['storage_path'],'/')."/";                 // ensure to have a trailing slash
     		$savemsg = get_std_save_message(write_config());
-$debugmsg[] = "1. ".$savemsg;
     
             if (is_file($config['btsync']['rootfolder']."sync.conf")) {
                 $sync_conf = file_get_contents($config['btsync']['rootfolder']."sync.conf");
@@ -128,7 +130,6 @@ $debugmsg[] = "1. ".$savemsg;
             }
     
             $sync_conf['device_name'] = !empty($_POST['device_name']) ? $_POST['device_name'] : "";
-$debugmsg[] = "zuordnen: post: ".$_POST['device_name']." sync.conf: ".$sync_conf['device_name'];
             $sync_conf['storage_path'] = !empty($_POST['storage_path']) ? $_POST['storage_path'] : $config['btsync']['rootfolder'].".sync/";
             $sync_conf['pid_file'] = !empty($_POST['pid_file']) ? $_POST['pid_file'] : $sync_conf['storage_path']."sync.pid";
             $sync_conf['webui']['listen'] = isset($_POST['listen_to_all']) ? '0.0.0.0:'.$config['btsync']['port'] : $config['btsync']['ipaddr'].':'.$config['btsync']['port'];
@@ -164,7 +165,6 @@ $debugmsg[] = "zuordnen: post: ".$_POST['device_name']." sync.conf: ".$sync_conf
     
     		$config['btsync']['command'] = "su {$config['btsync']['who']} -c '{$config['btsync']['rootfolder']}btsync --config {$config['btsync']['rootfolder']}sync.conf'";
     		$savemsg = get_std_save_message(write_config());
-$debugmsg[] = "2. ".$savemsg;
     
             file_put_contents($config['btsync']['rootfolder']."sync.conf", json_encode($sync_conf, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ));
             if (json_last_error() > 0) { $input_errors[] = gettext('Error during encoding/writing sync.conf file with error number: ').json_last_error(); };
@@ -252,9 +252,8 @@ $debugmsg[] = "2. ".$savemsg;
             }   // end of activate cronjobs
         }   // end of enable extension
 		else { 
-            exec("killall btsync"); $savemsg = $savemsg." ".$config['btsync']['appname']." is now disabled!"; 
+            exec("killall btsync"); $savemsg = $savemsg." ".$config['btsync']['appname'].gettext(" is now disabled!"); 
             $config['btsync']['enable'] = isset($_POST['enable']) ? true : false;
-$debugmsg[] = "DISABLE ".$savemsg." ".$config['btsync']['enable'];
             write_config();
             if (isset($config['btsync']['enable_schedule'])) {  // if cronjobs exists -> deactivate
                 $cronjob = array();
@@ -339,10 +338,8 @@ if (is_file($config['btsync']['rootfolder']."sync.conf")) {
     $sync_conf = file_get_contents($config['btsync']['rootfolder']."sync.conf");
     $sync_conf = utf8_encode($sync_conf);
     $sync_conf = json_clean_decode($sync_conf,true);
-$debugmsg[] = 'JSON state: '.json_last_error().' sync.conf value:'.' fri= '.$sync_conf['folder_rescan_interval'];    
 }
 
-$debugmsg[] = "einlesen aller config & sync.conf daten";
 $pconfig['enable'] = isset($config['btsync']['enable']);
 $pconfig['who'] = !empty($config['btsync']['who']) ? $config['btsync']['who'] : "";
 $pconfig['if'] = !empty($config['btsync']['if']) ? $config['btsync']['if'] : "";
@@ -401,8 +398,8 @@ if (isset($config['vinterfaces']['lagg']) && is_array($config['vinterfaces']['la
 if (empty($pconfig['if']) && is_array($a_interface)) $pconfig['if'] = key($a_interface);
 
 function get_process_info() {
-    if (exec('ps acx | grep btsync')) { $state = '<a style=" background-color: #00ff00; ">&nbsp;&nbsp;<b>running</b>&nbsp;&nbsp;</a>'; }
-    else { $state = '<a style=" background-color: #ff0000; ">&nbsp;&nbsp;<b>stopped</b>&nbsp;&nbsp;</a>'; }
+    if (exec('ps acx | grep btsync')) { $state = '<a style=" background-color: #00ff00; ">&nbsp;&nbsp;<b>'.gettext("running").'</b>&nbsp;&nbsp;</a>'; }
+    else { $state = '<a style=" background-color: #ff0000; ">&nbsp;&nbsp;<b>'.gettext("stopped").'</b>&nbsp;&nbsp;</a>'; }
 	return ($state);
 }
 
@@ -411,6 +408,7 @@ if (is_ajax()) {
 	render_ajax($procinfo);
 }
 
+bindtextdomain("nas4free", "/usr/local/share/locale");
 include("fbegin.inc");?>  
 <script type="text/javascript">//<![CDATA[
 $(document).ready(function(){
@@ -541,6 +539,7 @@ function as_change() {
 //-->
 </script>
 <form action="btsync.php" method="post" name="iform" id="iform">
+<?php bindtextdomain("nas4free", "/usr/local/share/locale-bts"); ?>
     <table width="100%" border="0" cellpadding="0" cellspacing="0">
 	<tr><td class="tabnavtbl">
 		<ul id="tabnav">
@@ -551,7 +550,6 @@ function as_change() {
 		</ul>
 	</td></tr>
     <tr><td class="tabcont">
-<!-- <?php if (!empty($debugmsg)) print_input_errors($debugmsg);?> -->
         <?php if (!empty($input_errors)) print_input_errors($input_errors);?>
         <?php if (!empty($savemsg)) print_info_box($savemsg);?>
         <table width="100%" border="0" cellpadding="6" cellspacing="0">
@@ -582,12 +580,12 @@ function as_change() {
 						<?php endif;?>
 					<?php endforeach;?>
 				</select>
-				<br /><?=gettext("Select which interface to use. (only selectable if your server has more than one)");?>
+				<br /><?=gettext("Select which interface to use (only selectable if your server has more than one).");?>
 				</td>
 			</tr>
 			<?php html_inputbox("port", gettext("WebUI")." ".gettext("Port"), $pconfig['port'], sprintf(gettext("Port to listen on. Only dynamic or private ports can be used (from %d through %d). Default port is %d."), 1025, 65535, 8888), true, 5);?>
-            <?php html_checkbox("listen_to_all", gettext("External access"), $pconfig['listen_to_all'], gettext("Enable / disable external (Internet) access. If enabled the WebUI listens to all IP addresses (0.0.0.0) instead of the chosen interface IP address."), "Default is false.", true);?>
-            <?php html_checkbox("force_https", gettext("Secure connection"), $pconfig['force_https'], gettext("If set to true Hypertext Transfer Protocol Secure (HTTPS) will be used for the BitTorrent Sync WebUI."), "Default is true.", true);?>
+            <?php html_checkbox("listen_to_all", gettext("External access"), $pconfig['listen_to_all'], gettext("Enable / disable external (Internet) access. If enabled the WebUI listens to all IP addresses (0.0.0.0) instead of the chosen interface IP address."), gettext("Default is false."), true);?>
+            <?php html_checkbox("force_https", gettext("Secure connection"), $pconfig['force_https'], gettext("If set to true Hypertext Transfer Protocol Secure (HTTPS) will be used for the BitTorrent Sync WebUI."), gettext("Default is true."), true);?>
 			<?php html_separator();?>
         	<?php html_titleline_checkbox("as_enable", gettext("Advanced settings"), isset($_POST['as_enable']) ? true : false, gettext("Show"), "as_change()");?>
     		<?php $a_user = array(); foreach (system_get_user_list() as $userk => $userv) { $a_user[$userk] = htmlspecialchars($userk); }?>
@@ -598,29 +596,29 @@ function as_change() {
             <?php html_filechooser("ssl_private_key", gettext("Private key"), $pconfig['ssl_private_key'], gettext("Path to private key file (in PEM format)."), $g['media_path'], false, 60);?>
             <?php html_filechooser("directory_root", gettext("Directory root"), $pconfig['directory_root'], gettext("Defines where the WebUI Folder browser starts. Default is /mnt."), $g['media_path'], false, 60);?>
             <?php html_inputbox("dir_whitelist", gettext("Directory whitelist"), $pconfig['dir_whitelist'], gettext("Defines which directories (comma-separated - no other delimiters allowed) can be shown to user or have folders added, relative paths are relative to 'Directory root' setting."), false, 60);?>
-            <?php html_inputbox("config_refresh_interval", gettext("config_refresh_interval"), $pconfig['config_refresh_interval'], sprintf(gettext("Controls how often settings are saved to storage. Can be adjusted to prevent HDD from low-power mode. Default is %d seconds."), 3600), false, 5);?>
-            <?php html_checkbox("disk_low_priority", gettext("disk_low_priority"), $pconfig['disk_low_priority'], gettext("Sets priority for the file operations on disc."), "Default is true.", false);?>
-            <?php html_inputbox("listening_port", gettext("listening_port"), $pconfig['listening_port'], sprintf(gettext("Allows you to configure the port BitTorrent Sync will be using for incoming and outgoing UDP packets and incoming TCP connections. Default is %d (random value)."), 0), false, 5);?>
-            <?php html_inputbox("external_port", gettext("external_port"), $pconfig['external_port'], sprintf(gettext("External (i.e. relative to NAT) port value. Default is %d (not set)."), 0), false, 5);?>
-            <?php html_checkbox("folder_defaults_delete_to_trash", gettext("folder_defaults.delete_to_trash"), $pconfig['folder_defaults_delete_to_trash'], gettext("Default setting for folder preference 'Store deleted files in folder archive'."), "Default is true.", false);?>
-            <?php html_inputbox("folder_defaults_known_hosts", gettext("folder_defaults.known_hosts"), $pconfig['folder_defaults_known_hosts'], sprintf(gettext("Default setting for folder preference 'Use predefined hosts'. Hosts should be entered as single line of IP:port pairs (or DNSname:port pairs) comma-separated (no other delimiters allowed)."), ""), false, 80);?>
-            <?php html_checkbox("folder_defaults_use_dht", gettext("folder_defaults.use_dht"), $pconfig['folder_defaults_use_dht'], gettext("Default setting for folder preference 'Search DHT network'."), "Default is false.", false);?>
-            <?php html_checkbox("folder_defaults_use_lan_broadcast", gettext("folder_defaults.use_lan_broadcast"), $pconfig['folder_defaults_use_lan_broadcast'], gettext("Default setting for folder preference 'Search LAN'."), "Default is true.", false);?>
-            <?php html_checkbox("folder_defaults_use_relay", gettext("folder_defaults.use_relay"), $pconfig['folder_defaults_use_relay'], gettext("Default setting for folder preference 'Use relay server when required'."), "Default is true.", false);?>
-            <?php html_checkbox("folder_defaults_use_tracker", gettext("folder_defaults.use_tracker"), $pconfig['folder_defaults_use_tracker'], gettext("Default setting for folder preference 'Use tracker server'."), "Default is true.", false);?>
-            <?php html_inputbox("folder_rescan_interval", gettext("folder_rescan_interval"), $pconfig['folder_rescan_interval'], sprintf(gettext("Sets a time interval for rescanning sync. Default is %d seconds."), 600), false, 5);?>
-            <?php html_checkbox("lan_encrypt_data", gettext("lan_encrypt_data"), $pconfig['lan_encrypt_data'], gettext("If set to true, will use encryption in the local network."), "Default is true.", false);?>
-            <?php html_checkbox("lan_use_tcp", gettext("lan_use_tcp"), $pconfig['lan_use_tcp'], gettext("If set to true, Sync will use TCP instead of UDP in local network."), "Default is false.", false);?>
-            <?php html_inputbox("log_size", gettext("log_size"), $pconfig['log_size'], sprintf(gettext("Amount of file size allocated for sync.log and debug log. After reaching selected amount, sync.log renamed to sync.log.old (overwriting old instance), and empty sync.log created. Default is %d MB."), 10), false, 5);?>
-            <?php html_inputbox("max_file_size_diff_for_patching", gettext("max_file_size_diff_for_patching"), $pconfig['max_file_size_diff_for_patching'], sprintf(gettext("Determines a size difference between versions of one file for patching. Default is %d MB."), 1000), false, 5);?>
-            <?php html_inputbox("max_file_size_for_versioning", gettext("max_file_size_for_versioning"), $pconfig['max_file_size_for_versioning'], sprintf(gettext("Determines maximum file size for creating file versions. Default is %d MB."), 1000), false, 5);?>
-            <?php html_inputbox("peer_expiration_days", gettext("peer_expiration_days"), $pconfig['peer_expiration_days'], sprintf(gettext("Amount of days to pass before peer is removed from peer list. Default is %d days."), 7), false, 5);?>
-            <?php html_checkbox("profiler_enabled", gettext("profiler_enabled"), $pconfig['profiler_enabled'], gettext("Requires client restart to activate. Starts recording data for speed issue analysis. Data is stored in proffer.dat in storage folder, rotated every 10 minutes."), "Default is false.", false);?>
-            <?php html_checkbox("rate_limit_local_peers", gettext("rate_limit_local_peers"), $pconfig['rate_limit_local_peers'], gettext("Applies speed limits to the peers in local network."), "Default is false.", false);?>
-            <?php html_inputbox("recv_buf_size", gettext("recv_buf_size"), $pconfig['recv_buf_size'], sprintf(gettext("The amount of real memory that will be used for cached receive operations, can be set in the range from %d to %d MB. Default is %d MB."), 1, 100, 5), false, 5);?>
-            <?php html_inputbox("send_buf_size", gettext("send_buf_size"), $pconfig['send_buf_size'], sprintf(gettext("The amount of real memory that will be used for cached send operations, can be set in the range from %d to %d MB. Default is %d MB."), 1, 100, 5), false, 5);?>
-            <?php html_inputbox("sync_max_time_diff", gettext("sync_max_time_diff"), $pconfig['sync_max_time_diff'], sprintf(gettext("Maximum allowed time difference between devices. Default is %d seconds."), 600), false, 5);?>
-            <?php html_inputbox("sync_trash_ttl", gettext("sync_trash_ttl"), $pconfig['sync_trash_ttl'], sprintf(gettext("Sets the number of days after reaching which files will be automatically deleted from the .SyncArchive folder. Default is %d days."), 30), false, 5);?>
+            <?php html_inputbox("config_refresh_interval", "config_refresh_interval", $pconfig['config_refresh_interval'], sprintf(gettext("Controls how often settings are saved to storage. Can be adjusted to prevent HDD from low-power mode. Default is %d seconds."), 3600), false, 5);?>
+            <?php html_checkbox("disk_low_priority", "disk_low_priority", $pconfig['disk_low_priority'], gettext("Sets priority for the file operations on disc."), gettext("Default is true."), false);?>
+            <?php html_inputbox("listening_port", "listening_port", $pconfig['listening_port'], sprintf(gettext("Allows you to configure the port BitTorrent Sync will be using for incoming and outgoing UDP packets and incoming TCP connections. Default is %d (random value)."), 0), false, 5);?>
+            <?php html_inputbox("external_port", "external_port", $pconfig['external_port'], sprintf(gettext("External (i.e. relative to NAT) port value. Default is %d (not set)."), 0), false, 5);?>
+            <?php html_checkbox("folder_defaults_delete_to_trash", "folder_defaults.delete_to_trash", $pconfig['folder_defaults_delete_to_trash'], gettext("Default setting for folder preference 'Store deleted files in folder archive'."), gettext("Default is true."), false);?>
+            <?php html_inputbox("folder_defaults_known_hosts", "folder_defaults.known_hosts", $pconfig['folder_defaults_known_hosts'], sprintf(gettext("Default setting for folder preference 'Use predefined hosts'. Hosts should be entered as single line of IP:port pairs (or DNSname:port pairs) comma-separated (no other delimiters allowed)."), ""), false, 80);?>
+            <?php html_checkbox("folder_defaults_use_dht", "folder_defaults.use_dht", $pconfig['folder_defaults_use_dht'], gettext("Default setting for folder preference 'Search DHT network'."), gettext("Default is false."), false);?>
+            <?php html_checkbox("folder_defaults_use_lan_broadcast", "folder_defaults.use_lan_broadcast", $pconfig['folder_defaults_use_lan_broadcast'], gettext("Default setting for folder preference 'Search LAN'."), gettext("Default is true."), false);?>
+            <?php html_checkbox("folder_defaults_use_relay", "folder_defaults.use_relay", $pconfig['folder_defaults_use_relay'], gettext("Default setting for folder preference 'Use relay server when required'."), gettext("Default is true."), false);?>
+            <?php html_checkbox("folder_defaults_use_tracker", "folder_defaults.use_tracker", $pconfig['folder_defaults_use_tracker'], gettext("Default setting for folder preference 'Use tracker server'."), gettext("Default is true."), false);?>
+            <?php html_inputbox("folder_rescan_interval", "folder_rescan_interval", $pconfig['folder_rescan_interval'], sprintf(gettext("Sets a time interval for rescanning sync. Default is %d seconds."), 600), false, 5);?>
+            <?php html_checkbox("lan_encrypt_data", "lan_encrypt_data", $pconfig['lan_encrypt_data'], gettext("If set to true, will use encryption in the local network."), gettext("Default is true."), false);?>
+            <?php html_checkbox("lan_use_tcp", "lan_use_tcp", $pconfig['lan_use_tcp'], gettext("If set to true, Sync will use TCP instead of UDP in local network."), gettext("Default is false."), false);?>
+            <?php html_inputbox("log_size", "log_size", $pconfig['log_size'], sprintf(gettext("Amount of file size allocated for sync.log and debug log. After reaching selected amount, sync.log renamed to sync.log.old (overwriting old instance), and empty sync.log created. Default is %d MB."), 10), false, 5);?>
+            <?php html_inputbox("max_file_size_diff_for_patching", "max_file_size_diff_for_patching", $pconfig['max_file_size_diff_for_patching'], sprintf(gettext("Determines a size difference between versions of one file for patching. Default is %d MB."), 1000), false, 5);?>
+            <?php html_inputbox("max_file_size_for_versioning", "max_file_size_for_versioning", $pconfig['max_file_size_for_versioning'], sprintf(gettext("Determines maximum file size for creating file versions. Default is %d MB."), 1000), false, 5);?>
+            <?php html_inputbox("peer_expiration_days", "peer_expiration_days", $pconfig['peer_expiration_days'], sprintf(gettext("Amount of days to pass before peer is removed from peer list. Default is %d days."), 7), false, 5);?>
+            <?php html_checkbox("profiler_enabled", "profiler_enabled", $pconfig['profiler_enabled'], gettext("Requires client restart to activate. Starts recording data for speed issue analysis. Data is stored in proffer.dat in storage folder, rotated every 10 minutes."), gettext("Default is false."), false);?>
+            <?php html_checkbox("rate_limit_local_peers", "rate_limit_local_peers", $pconfig['rate_limit_local_peers'], gettext("Applies speed limits to the peers in local network."), gettext("Default is false."), false);?>
+            <?php html_inputbox("recv_buf_size", "recv_buf_size", $pconfig['recv_buf_size'], sprintf(gettext("The amount of real memory that will be used for cached receive operations, can be set in the range from %d to %d MB. Default is %d MB."), 1, 100, 5), false, 5);?>
+            <?php html_inputbox("send_buf_size", "send_buf_size", $pconfig['send_buf_size'], sprintf(gettext("The amount of real memory that will be used for cached send operations, can be set in the range from %d to %d MB. Default is %d MB."), 1, 100, 5), false, 5);?>
+            <?php html_inputbox("sync_max_time_diff", "sync_max_time_diff", $pconfig['sync_max_time_diff'], sprintf(gettext("Maximum allowed time difference between devices. Default is %d seconds."), 600), false, 5);?>
+            <?php html_inputbox("sync_trash_ttl", "sync_trash_ttl", $pconfig['sync_trash_ttl'], sprintf(gettext("Sets the number of days after reaching which files will be automatically deleted from the .SyncArchive folder. Default is %d days."), 30), false, 5);?>
         </table>
         <div id="remarks">
             <?php html_remark("note", gettext("Note"), sprintf(gettext("These parameters will be added to %s."), "{$config['btsync']['rootfolder']}sync.conf")." ".sprintf(gettext("Please check the <a href='%s' target='_blank'>documentation</a>."), "http://sync-help.bittorrent.com/"));?>
