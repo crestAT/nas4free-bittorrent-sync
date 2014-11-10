@@ -1,5 +1,5 @@
 ﻿Version Date        Description
-0.6.4   2014.10.31  N: language support
+0.6.4   2014.11.10  N: language support
                     N: added Russian language
                     N: added German language
                     N: quick check for BitTorrent Sync updates

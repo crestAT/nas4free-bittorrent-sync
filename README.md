@@ -23,6 +23,10 @@ INSTALLATION
 HISTORY
 -------
 Version Date        Description
+0.6.4   2014.11.10  N: language support
+                    N: added Russian language
+                    N: added German language
+                    N: quick check for BitTorrent Sync updates
 0.6.3.6 2014.10.17  N: BTS installation, new tab "Extension Maintainance" for online extension update and remove via the WebGUI
 0.6.1.7 2014.10.06  C: btsync-installer: combined Install/Update option
                     C: Configuration: improvements for user change, take care about permissions
