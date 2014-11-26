@@ -29,6 +29,9 @@
     of the authors and should not be interpreted as representing official policies,
     either expressed or implied, of the FreeBSD Project.
 */
+// 2014.11.26   0.6.4.1     N: added French language
+//		                    N: added Greek language
+//      					N: added Italian language
 // 2014.11.01   0.6.4       N: language support
 //		                    N: added Russian language
 //      					N: added German language
@@ -79,7 +82,7 @@ global $input_errors;
 global $savemsg;
 $install_dir = "./";
 if (isset($config['btsync']['rootfolder'])) { $install_dir = dirname($config['btsync']['rootfolder'])."/"; }
-$return_val = mwexec("fetch -T30 -aw10 -vo {$install_dir}master.zip 'http://sourceforge.net/projects/nas4freeextensionbts/files/BitTorrent%20Sync/bts-v064.zip/download'", true);
+$return_val = mwexec("fetch -T30 -aw10 -vo {$install_dir}master.zip 'http://sourceforge.net/projects/nas4freeextensionbts/files/BitTorrent%20Sync/bts-v0641.zip/download'", true);
 if ($return_val == 0) {
     $return_val = mwexec("tar -xf {$install_dir}master.zip -C {$install_dir} --exclude='.git*' --strip-components 1", true);
     if ($return_val == 0) {

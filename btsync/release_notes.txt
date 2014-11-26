@@ -1,4 +1,7 @@
 ﻿Version Date        Description
+0.6.4.1 2014.11.26  N: added French language
+                    N: added Greek language
+                    N: added Italian language
 0.6.4   2014.11.13  N: language support
                     N: added Russian language
                     N: added German language
