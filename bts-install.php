@@ -95,6 +95,8 @@ if ($return_val == 0) {
     if ($return_val == 0) {
         exec("rm {$install_dir}master.zip");
         exec("chmod -R 775 {$install_dir}btsync");
+        if (is_file("{$install_dir}btsync/version.txt")) { $file_version = exec("cat {$install_dir}btsync/version.txt"); }
+        else { $file_version = "n/a"; }
         $savemsg = sprintf(gettext("Update to version %s completed!"), $file_version);
     }
     else { 
@@ -104,6 +106,8 @@ if ($return_val == 0) {
             if ($return_val == 0) {
                 exec("rm {$install_dir}master.zip");
                 exec("chmod -R 775 {$install_dir}btsync");
+                if (is_file("{$install_dir}btsync/version.txt")) { $file_version = exec("cat {$install_dir}btsync/version.txt"); }
+                else { $file_version = "n/a"; }
                 $savemsg = sprintf(gettext("Update to version %s completed!"), $file_version);
             }
             else { $input_errors[] = sprintf(gettext("Archive file %s not found, installation aborted!"), "master.zip corrupt /"); }
