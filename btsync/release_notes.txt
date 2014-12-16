@@ -1,4 +1,6 @@
 ﻿Version Date        Description
+0.6.4.2 2014.12.16  C: installer improvements
+                    N: on demand one-time reset of the BitTorrent Sync WebUI user
 0.6.4.1 2014.11.26  N: added French language
                     N: added Greek language
                     N: added Italian language

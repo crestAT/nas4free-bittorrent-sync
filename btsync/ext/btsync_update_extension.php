@@ -133,7 +133,7 @@ if (isset($_POST['ext_update']) && $_POST['ext_update']) {
     if ($return_val == 0) {
         require_once("{$install_dir}/bts-install.php"); 
         header("Refresh:8");;
-        $savemsg = sprintf(gettext("Update to version %s completed!"), $config['btsync']['version']);
+//        $savemsg = sprintf(gettext("Update to version %s completed!"), $config['btsync']['version']);
     }
     else { $input_errors[] = sprintf(gettext("Archive file %s not found, installation aborted!"), "{$install_dir}/bts-install.php"); }
 }

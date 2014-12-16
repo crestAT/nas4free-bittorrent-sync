@@ -129,6 +129,14 @@ if (isset($_POST['save']) && $_POST['save']) {
                 $sync_conf = json_clean_decode($sync_conf,true);
             }
     
+            if (isset($_POST['resetuser'])) {
+                $sync_conf['webui']['login'] = "admin";
+                $sync_conf['webui']['password'] = "password"; 
+            }
+            else {
+                if ($sync_conf['webui']['login'] == "admin") unset($sync_conf['webui']['login']);
+                if ($sync_conf['webui']['password'] == "password") unset($sync_conf['webui']['password']);
+            }
             $sync_conf['device_name'] = !empty($_POST['device_name']) ? $_POST['device_name'] : "";
             $sync_conf['storage_path'] = !empty($_POST['storage_path']) ? $_POST['storage_path'] : $config['btsync']['rootfolder'].".sync/";
             $sync_conf['pid_file'] = !empty($_POST['pid_file']) ? $_POST['pid_file'] : $sync_conf['storage_path']."sync.pid";
@@ -423,6 +431,7 @@ $(document).ready(function(){
 <!--
 function enable_change(enable_change) {
 	var endis = !(document.iform.enable.checked || enable_change);
+	document.iform.resetuser.disabled = endis;
 	document.iform.listen_to_all.disabled = endis;
 	document.iform.device_name.disabled = endis;
 	document.iform.force_https.disabled = endis;
@@ -586,6 +595,7 @@ function as_change() {
 			<?php html_inputbox("port", gettext("WebUI")." ".gettext("Port"), $pconfig['port'], sprintf(gettext("Port to listen on. Only dynamic or private ports can be used (from %d through %d). Default port is %d."), 1025, 65535, 8888), true, 5);?>
             <?php html_checkbox("listen_to_all", gettext("External access"), $pconfig['listen_to_all'], gettext("Enable / disable external (Internet) access. If enabled the WebUI listens to all IP addresses (0.0.0.0) instead of the chosen interface IP address."), gettext("Default is disabled."), true);?>
             <?php html_checkbox("force_https", gettext("Secure connection"), $pconfig['force_https'], gettext("If enabled, Hypertext Transfer Protocol Secure (HTTPS) will be used for the BitTorrent Sync WebUI."), gettext("Default is enabled."), true);?>
+            <?php html_checkbox("resetuser", gettext("Reset WebUI user"), false, "<b><font color='#FF0000'>".gettext("Set username to 'admin' and password to 'password'. Use the BitTorrent Sync WebUI to define a new username and password, after that save and restart again with unselected checkbox!")."</font></b>", "", false);?>
 			<?php html_separator();?>
         	<?php html_titleline_checkbox("as_enable", gettext("Advanced settings"), isset($_POST['as_enable']) ? true : false, gettext("Show"), "as_change()");?>
     		<?php $a_user = array(); foreach (system_get_user_list() as $userk => $userv) { $a_user[$userk] = htmlspecialchars($userk); }?>

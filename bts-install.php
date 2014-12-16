@@ -69,6 +69,7 @@
 
 // $version = "0.6.4";  -> read from version.txt file
 $appname = "BitTorrent Sync";
+$filename = "bts-v0642.zip"; 
 
 require_once("config.inc");
 
@@ -82,14 +83,33 @@ global $input_errors;
 global $savemsg;
 $install_dir = "./";
 if (isset($config['btsync']['rootfolder'])) { $install_dir = dirname($config['btsync']['rootfolder'])."/"; }
-$return_val = mwexec("fetch -T30 -aw10 -vo {$install_dir}master.zip 'http://sourceforge.net/projects/nas4freeextensionbts/files/BitTorrent%20Sync/bts-v0641.zip/download'", true);
+
+// check FreeBSD release for fetch options >= 9.3
+$release = explode("-", exec("uname -r"));
+if ($release[0] >= 9.3) $verify_hostname = "--no-verify-hostname";
+else $verify_hostname = "";
+
+$return_val = mwexec("fetch -T30 -aw10 {$verify_hostname} -vo {$install_dir}master.zip 'http://sourceforge.net/projects/nas4freeextensionbts/files/BitTorrent%20Sync/{$filename}/download'", true);
 if ($return_val == 0) {
     $return_val = mwexec("tar -xf {$install_dir}master.zip -C {$install_dir} --exclude='.git*' --strip-components 1", true);
     if ($return_val == 0) {
         exec("rm {$install_dir}master.zip");
         exec("chmod -R 775 {$install_dir}btsync");
+        $savemsg = sprintf(gettext("Update to version %s completed!"), $file_version);
     }
-    else { $input_errors[] = sprintf(gettext("Archive file %s not found, installation aborted!"), "master.zip corrupt /"); }
+    else { 
+        $return_val = mwexec("fetch {$verify_hostname} -vo {$install_dir}master.zip 'https://www.a3s.at/_blog/_NAS4FREE/fp-plugins/downloadctr/res/download.php?x=btsync/{$filename}'", true);
+        if ($return_val == 0) {
+            $return_val = mwexec("tar -xf {$install_dir}master.zip -C {$install_dir} --exclude='.git*' --strip-components 1", true);
+            if ($return_val == 0) {
+                exec("rm {$install_dir}master.zip");
+                exec("chmod -R 775 {$install_dir}btsync");
+                $savemsg = sprintf(gettext("Update to version %s completed!"), $file_version);
+            }
+            else { $input_errors[] = sprintf(gettext("Archive file %s not found, installation aborted!"), "master.zip corrupt /"); }
+        }
+        else { $input_errors[] = sprintf(gettext("Archive file %s not found, installation aborted!"), "master.zip"); }
+    }
 }
 else { $input_errors[] = sprintf(gettext("Archive file %s not found, installation aborted!"), "master.zip"); }
 
@@ -118,7 +138,7 @@ if ( !isset($config['btsync']) || !is_array($config['btsync'])) {
 	$config['btsync']['previous_url'] = $config['btsync']['download_url'];
     exec ("fetch -o {$cwdir} {$config['btsync']['download_url']}");
     exec ("cd ".$cwdir." && tar -xzvf stable");
-    if ( !is_file ($cwdir.'btsync') ) { echo ('Executable file "btsync" not found, installation aborted!'); exit (3); }
+    if ( !is_file ($cwdir.'btsync') ) { echo 'Executable file "btsync" not found, installation aborted!'; exit (3); }
     $config['btsync']['product_version'] = exec ($cwdir."btsync --help | awk '/".$appname."/ {print $3}'");
     if (!is_dir ($config['btsync']['rootfolder'].'.sync')) { exec ("mkdir -p ".$config['btsync']['rootfolder'].'.sync'); }
     if (!is_dir ($config['btsync']['backupfolder'])) { exec ("mkdir -p ".$config['btsync']['backupfolder']); }
