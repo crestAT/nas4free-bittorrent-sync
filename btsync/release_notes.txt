@@ -1,7 +1,8 @@
 ﻿Version Date        Description
 0.7     2016.01.30  new major release
                     C: moved host to GitHub
-                    C: new standard download URL: https://download-cdn.getsync.com/stable/FreeBSD-{ARCHITECTURE}/BitTorrent-Sync_freebsd_{ARCHITECTURE}.tar.gz
+                    C: new standard download URL:
+                       https://download-cdn.getsync.com/stable/FreeBSD-{ARCHITECTURE}/BitTorrent-Sync_freebsd_{ARCHITECTURE}.tar.gz
                     C: use natsort for backup list
                     F: error while parsing config file: Invalid key 'max_file_size_diff_for_patching'
                     F: installation directory when used with a backuped config file (config.xml)
