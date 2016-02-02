@@ -2,7 +2,7 @@
 /*
     btsync_update.php
     
-    Copyright (c) 2013, 2014, Andreas Schmidhuber
+    Copyright (c) 2013 - 2016 Andreas Schmidhuber
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -320,7 +320,8 @@ function filelist ($contains , $exclude='') {
 			foreach ( $exclude as $search_pattern ) {
 				$file_list = preg_grep( "/{$search_pattern}/" , $file_list , PREG_GREP_INVERT );
 			}
-		sort ( $file_list , SORT_NUMERIC );
+//		sort ( $file_list , SORT_NUMERIC );
+		natsort ( $file_list );
 		}
 	} // end of verifying rootfolder as valid location
 	return $file_list ;
@@ -392,7 +393,12 @@ function enable_change(enable_change) {
 
 //-->
 </script>
-<form action="btsync_update.php" method="post" name="iform" id="iform">
+<!-- The Spinner Elements -->
+<?php include("ext/btsync/spinner.inc");?>
+<script src="ext/btsync/spin.min.js"></script>
+<!-- use: onsubmit="spinner()" within the form tag -->
+
+<form action="btsync_update.php" method="post" name="iform" id="iform" onsubmit="spinner()">
 <?php bindtextdomain("nas4free", "/usr/local/share/locale-bts"); ?>
 <table width="100%" border="0" cellpadding="0" cellspacing="0">
 	<tr><td class="tabnavtbl">
@@ -417,10 +423,12 @@ function enable_change(enable_change) {
 				<td valign="top" class="vncell"><?=gettext("Latest version fetched from BitTorrent server");?>
 				</td>
 				<td class="vtable"><?=$pconfig['product_version_new'].gettext(" - push 'fetch' button to check for new version");?>
+                    <span class="label">&nbsp;&nbsp;&nbsp;</span>
                     <input id="fetch" name="fetch" type="submit" class="formbtn" value="<?=gettext("Fetch");?>" onClick="return fetch_handler();" />
                     <?php if (("{$pconfig['product_version_new']}" != "{$config['btsync']['product_version']}") && ("{$pconfig['product_version_new']}" != "n/a")) { ?> 
                         <input id="install_new" name="install_new" type="submit" class="formbtn" value="<?=gettext("Install");?>" onClick="return fetch_handler();" />
                     <?php } ?>
+                    <a href='https://www.getsync.com' target='_blank'>&nbsp;&nbsp;&nbsp;-> BitTorrent Sync</a>
 				</td>
 			</tr>
             <?php html_inputbox("download_url", gettext("Download URL"), $config['btsync']['download_url'], sprintf(gettext("Define a new permanent application download URL or an URL for a one-time download of a previous version.<br />Previous download URL was <b>%s</b>"), $config['btsync']['previous_url']), false, 100);?>

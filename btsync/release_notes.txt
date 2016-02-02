@@ -1,4 +1,10 @@
 ﻿Version Date        Description
+0.7     2016.01.30  new major release
+                    C: moved host to GitHub
+                    C: new standard download URL: https://download-cdn.getsync.com/stable/FreeBSD-{ARCHITECTURE}/BitTorrent-Sync_freebsd_{ARCHITECTURE}.tar.gz
+                    C: use natsort for backup list
+                    F: error while parsing config file: Invalid key 'max_file_size_diff_for_patching'
+                    F: installation directory when used with a backuped config file (config.xml)
 0.6.4.2 2014.12.16  C: installer improvements
                     N: on demand one-time reset of the BitTorrent Sync WebUI user
 0.6.4.1 2014.11.26  N: added French language

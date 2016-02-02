@@ -1,1 +1,1 @@
-<a href="btsync.php">BitTorrent Sync</a>
+<a href="btsync.php">BitTorrent Sync</a> 

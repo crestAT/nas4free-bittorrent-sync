@@ -2,7 +2,7 @@
 /* 
     btsync.php
 
-    Copyright (c) 2013, 2014, Andreas Schmidhuber
+    Copyright (c) 2013 - 2016 Andreas Schmidhuber
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -161,7 +161,7 @@ if (isset($_POST['save']) && $_POST['save']) {
             $sync_conf['lan_encrypt_data'] = isset($_POST['lan_encrypt_data']) ? true : false;
             $sync_conf['lan_use_tcp'] = isset($_POST['lan_use_tcp']) ? true : false;
             $sync_conf['log_size'] = (is_numeric($_POST['log_size']) ? (int)$_POST['log_size'] : 10);
-            $sync_conf['max_file_size_diff_for_patching'] = (is_numeric($_POST['max_file_size_diff_for_patching']) ? (int)$_POST['max_file_size_diff_for_patching'] : 1000);
+            unset($sync_conf['max_file_size_diff_for_patching']); // parameter no longer valid => BTS v2.3
             $sync_conf['max_file_size_for_versioning'] = (is_numeric($_POST['max_file_size_for_versioning']) ? (int)$_POST['max_file_size_for_versioning'] : 1000);
             $sync_conf['peer_expiration_days'] = (is_numeric($_POST['peer_expiration_days']) ? (int)$_POST['peer_expiration_days'] : 7);
             $sync_conf['profiler_enabled'] = isset($_POST['profiler_enabled']) ? true : false;
@@ -376,7 +376,6 @@ $pconfig['folder_rescan_interval'] = !empty($sync_conf['folder_rescan_interval']
 $pconfig['lan_encrypt_data'] = isset($sync_conf['lan_encrypt_data']) ? $sync_conf['lan_encrypt_data'] : true;
 $pconfig['lan_use_tcp'] = isset($sync_conf['lan_use_tcp']) ? $sync_conf['lan_use_tcp'] : false;
 $pconfig['log_size'] = !empty($sync_conf['log_size']) ? $sync_conf['log_size'] : 10;
-$pconfig['max_file_size_diff_for_patching'] = !empty($sync_conf['max_file_size_diff_for_patching']) ? $sync_conf['max_file_size_diff_for_patching'] : 1000;
 $pconfig['max_file_size_for_versioning'] = !empty($sync_conf['max_file_size_for_versioning']) ? $sync_conf['max_file_size_for_versioning'] : 1000;
 $pconfig['peer_expiration_days'] = !empty($sync_conf['peer_expiration_days']) ? $sync_conf['peer_expiration_days'] : 7;
 $pconfig['profiler_enabled'] = isset($sync_conf['profiler_enabled']) ? $sync_conf['profiler_enabled'] : false;
@@ -463,7 +462,6 @@ function enable_change(enable_change) {
 	document.iform.lan_encrypt_data.disabled = endis;
 	document.iform.lan_use_tcp.disabled = endis;
     document.iform.log_size.disabled = endis;
-	document.iform.max_file_size_diff_for_patching.disabled = endis;
 	document.iform.max_file_size_for_versioning.disabled = endis;
     document.iform.peer_expiration_days.disabled = endis;
     document.iform.profiler_enabled.disabled = endis;
@@ -499,7 +497,6 @@ function as_change() {
     		showElementById('lan_encrypt_data_tr','hide');
     		showElementById('lan_use_tcp_tr','hide');
     		showElementById('log_size_tr','hide');
-    		showElementById('max_file_size_diff_for_patching_tr','hide');
     		showElementById('max_file_size_for_versioning_tr','hide');
     		showElementById('peer_expiration_days_tr','hide');
     		showElementById('profiler_enabled_tr','hide');
@@ -533,7 +530,6 @@ function as_change() {
     		showElementById('lan_encrypt_data_tr','show');
     		showElementById('lan_use_tcp_tr','show');
     		showElementById('log_size_tr','show');
-    		showElementById('max_file_size_diff_for_patching_tr','show');
     		showElementById('max_file_size_for_versioning_tr','show');
     		showElementById('peer_expiration_days_tr','show');
     		showElementById('profiler_enabled_tr','show');
@@ -563,6 +559,7 @@ function as_change() {
         <?php if (!empty($savemsg)) print_info_box($savemsg);?>
         <table width="100%" border="0" cellpadding="6" cellspacing="0">
 			<?php html_titleline($config['btsync']['appname']." ".gettext("Information"));?>
+            <?php html_text("installation_directory", gettext("Installation directory"), sprintf(gettext("The extension is installed in %s."), $config['btsync']['rootfolder']));?>
 			<?php html_text("version", gettext("Version"), $config['btsync']['product_version']);?>
 			<?php html_text("architecture", gettext("Architecture"), $config['btsync']['architecture']);?>		
             <tr>
@@ -620,7 +617,6 @@ function as_change() {
             <?php html_checkbox("lan_encrypt_data", "lan_encrypt_data", $pconfig['lan_encrypt_data'], gettext("If enabled, will use encryption in the local network."), gettext("Default is enabled."), false);?>
             <?php html_checkbox("lan_use_tcp", "lan_use_tcp", $pconfig['lan_use_tcp'], gettext("If enabled, Sync will use TCP instead of UDP in local network."), gettext("Default is disabled."), false);?>
             <?php html_inputbox("log_size", "log_size", $pconfig['log_size'], sprintf(gettext("Amount of file size allocated for sync.log and debug log. After reaching selected amount, sync.log renamed to sync.log.old (overwriting old instance), and empty sync.log created. Default is %d MB."), 10), false, 5);?>
-            <?php html_inputbox("max_file_size_diff_for_patching", "max_file_size_diff_for_patching", $pconfig['max_file_size_diff_for_patching'], sprintf(gettext("Determines a size difference between versions of one file for patching. Default is %d MB."), 1000), false, 5);?>
             <?php html_inputbox("max_file_size_for_versioning", "max_file_size_for_versioning", $pconfig['max_file_size_for_versioning'], sprintf(gettext("Determines maximum file size for creating file versions. Default is %d MB."), 1000), false, 5);?>
             <?php html_inputbox("peer_expiration_days", "peer_expiration_days", $pconfig['peer_expiration_days'], sprintf(gettext("Amount of days to pass before peer is removed from peer list. Default is %d days."), 7), false, 5);?>
             <?php html_checkbox("profiler_enabled", "profiler_enabled", $pconfig['profiler_enabled'], gettext("Requires client restart to activate. Starts recording data for speed issue analysis. Data is stored in proffer.dat in storage folder, rotated every 10 minutes."), gettext("Default is disabled."), false);?>

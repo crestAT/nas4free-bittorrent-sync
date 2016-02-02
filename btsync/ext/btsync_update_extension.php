@@ -2,7 +2,7 @@
 /*
     btsync_update_extension.php
     
-    Copyright (c) 2013, 2014, Andreas Schmidhuber
+    Copyright (c) 2013 - 2016 Andreas Schmidhuber
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -150,7 +150,12 @@ function fetch_handler() {
 }
 //-->
 </script>
-<form action="btsync_update_extension.php" method="post" name="iform" id="iform">
+<!-- The Spinner Elements -->
+<?php include("ext/btsync/spinner.inc");?>
+<script src="ext/btsync/spin.min.js"></script>
+<!-- use: onsubmit="spinner()" within the form tag -->
+
+<form action="btsync_update_extension.php" method="post" name="iform" id="iform" onsubmit="spinner()">
 <?php bindtextdomain("nas4free", "/usr/local/share/locale-bts"); ?>
 <table width="100%" border="0" cellpadding="0" cellspacing="0">
 	<tr><td class="tabnavtbl">
