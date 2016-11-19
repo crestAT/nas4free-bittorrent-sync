@@ -143,7 +143,8 @@ if (isset($_POST['save']) && $_POST['save']) {
             $sync_conf['webui']['force_https'] = isset($_POST['force_https']) ? true : false;
             $sync_conf['webui']['ssl_certificate'] = !empty($_POST['ssl_certificate']) ? $_POST['ssl_certificate'] : "";
             $sync_conf['webui']['ssl_private_key'] = !empty($_POST['ssl_private_key']) ? $_POST['ssl_private_key'] : "";
-            $sync_conf['directory_root'] = !empty($_POST['directory_root']) ? $_POST['directory_root'] : "";
+			if (isset($sync_conf['webui']['directory_root'])) unset($sync_conf['webui']['directory_root']);	// old btsync parameter location -> went to global section for rslsync
+            $sync_conf['directory_root'] = !empty($_POST['directory_root']) ? $_POST['directory_root'] : "/mnt/";
             if (!empty($_POST['dir_whitelist'])) { $sync_conf['webui']['dir_whitelist'] = explode(",", str_replace(" ", "", rtrim($_POST['dir_whitelist'],','))); } 
             else { unset($sync_conf['webui']['dir_whitelist']); } 
             $sync_conf['config_refresh_interval'] = (is_numeric($_POST['config_refresh_interval']) ? (int)$_POST['config_refresh_interval'] : 3600);
@@ -359,7 +360,11 @@ $pconfig['device_name'] = !empty($sync_conf['device_name']) ? $sync_conf['device
 $pconfig['force_https'] = isset($sync_conf['webui']['force_https']) ? $sync_conf['webui']['force_https'] : true;
 $pconfig['ssl_certificate'] = !empty($sync_conf['webui']['ssl_certificate']) ? $sync_conf['webui']['ssl_certificate'] : "";
 $pconfig['ssl_private_key'] = !empty($sync_conf['webui']['ssl_private_key']) ? $sync_conf['webui']['ssl_private_key'] : "";
-$pconfig['directory_root'] = !empty($sync_conf['webui']['directory_root']) ? $sync_conf['webui']['directory_root'] : "/mnt/";
+if (!empty($sync_conf['webui']['directory_root'])) {					// old btsync parameter location -> went to global section for rslsync
+	$pconfig['directory_root'] = $sync_conf['webui']['directory_root'];
+	unset($sync_conf['webui']['directory_root']);
+}
+$pconfig['directory_root'] = !empty($sync_conf['directory_root']) ? $sync_conf['directory_root'] : "/mnt/";
 $pconfig['dir_whitelist'] = !empty($sync_conf['webui']['dir_whitelist']) ? implode(",", $sync_conf['webui']['dir_whitelist']) : "";
 $pconfig['storage_path'] = !empty($sync_conf['storage_path']) ? $sync_conf['storage_path'] : $config['btsync']['rootfolder'].".sync/";
 $pconfig['pid_file'] = !empty($sync_conf['pid_file']) ? $sync_conf['pid_file'] : $pconfig['storage_path']."sync.pid";
