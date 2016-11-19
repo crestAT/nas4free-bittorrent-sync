@@ -29,53 +29,7 @@
     of the authors and should not be interpreted as representing official policies,
     either expressed or implied, of the FreeBSD Project.
 */
-/*
-Version Date        Description
-0.7     2016.01.30  new major release
-                    C: moved host to GitHub
-                    C: new standard download URL: https://download-cdn.getsync.com/stable/FreeBSD-{ARCHITECTURE}/BitTorrent-Sync_freebsd_{ARCHITECTURE}.tar.gz
-                    C: use natsort for backup list
-                    F: error while parsing config file: Invalid key 'max_file_size_diff_for_patching'
-                    F: installation directory when used with a backuped config file (config.xml) 
-// 2014.11.26   0.6.4.1     N: added French language
-//		                    N: added Greek language
-//      					N: added Italian language
-// 2014.11.01   0.6.4       N: language support
-//		                    N: added Russian language
-//      					N: added German language
-//                          N: quick check for BitTorrent Sync updates
-// 2014.10.27   0.6.3.7     N: language support
-// 2014.10.17   0.6.3.6     C: GitHub
-// 2014.10.16   0.6.3.5     C: change to GitHub repo
-// 2014.10.14   0.6.3.4     C: update check 4
-// 2014.10.14   0.6.3.2     C: update check 2 without refresh advice
-// 2014.10.14   0.6.3.1     C: update check 1
-// 2014.10.14   0.6.3       C: back to 0.6.1.9e
-// 2014.10.13   0.6.1.9e-h  C: repo on secure server
-// 2014.10.12   0.6.1.9d    N: tab for online extension update & uninstall
-// 2014.10.12   0.6.1.9c    F: fixes for online extension update & uninstall
-// 2014.10.11   0.6.1.9b    N: online extension update & uninstall
-// 2014.10.09   0.6.1.9a    C: installation procedure
-// 2014.10.08   0.6.1.9     N: listening_port -> because in BTS setting it is ignored
-// 2014.10.07   0.6.1.8     N: new installer -> use with WebGUI | ADVANCED | COMMAND
-// 2014.10.06   0.6.1.7     C: extension installer combined Install and Update option
-// *            0.6.1.6     N: on user change set files permissions and check/change directory path for accessibility for the new user
-// *            0.6.1.5     N: one-time download of previous versions, VLAN & LAGG support
-// *            0.6.1.4     N: implementation of 1.4.xx features of BTS
-// *                        N: download URL handling
-// *            0.6.1.3     F: position of sync.log file from storage_path
-// *                        N: update documentation URL
-// *            0.6.1.2     C: save ALL params in sync.conf (not only those which are used in extension WebGUI!)
-// *            0.6.1.1     N: search function in logs, 2 columns in log view
-// *            0.6.1       C: download path for BTS application
-// *            0.6         introduce scheduler
-// *            0.5.7       correct display of boolean values from sync.conf file in btsync.php
-// *            0.5.6       introduce sync.conf file
-// *            0.5.5       log file filter
-// *            0.5.4.1     backup management
-// *            0.5a        fetch update, remove startup error msg
-*/
-$vstg = "v0.7";                           // extension version
+$vstg = "v0.7.1";                           // extension version
 $appname = "BitTorrent Sync";
 
 require_once("config.inc");
@@ -98,12 +52,14 @@ $release = explode("-", exec("uname -r"));
 if ($release[0] >= 9.3) $verify_hostname = "--no-verify-hostname";
 else $verify_hostname = "";
 
+exec("killall btsync");		// to be sure rslsync can startup successfully
+
 $vs = str_replace(".", "", $vstg);                          
 $return_val = mwexec("fetch {$verify_hostname} -vo {$install_dir}master.zip 'https://github.com/crestAT/nas4free-bittorrent-sync/releases/download/{$vstg}/bts-{$vs}.zip'", true);
 if ($return_val == 0) {
     $return_val = mwexec("tar -xf {$install_dir}master.zip -C {$install_dir} --exclude='.git*' --strip-components 1", true);
     if ($return_val == 0) {
-        exec("rm {$install_dir}master.zip");
+		exec("rm {$install_dir}master.zip");
         exec("chmod -R 775 {$install_dir}btsync");
         if (is_file("{$install_dir}btsync/version.txt")) { $file_version = exec("cat {$install_dir}btsync/version.txt"); }
         else { $file_version = "n/a"; }
@@ -114,74 +70,80 @@ if ($return_val == 0) {
 else { $input_errors[] = sprintf(gettext("Archive file %s not found, installation aborted!"), "master.zip"); }
 
 // install application on server
-if ( !isset($config['btsync']) || !is_array($config['btsync'])) {
-    $config['btsync'] = array();
-	$config['btsync']['appname'] = $appname;
-    $config['btsync']['version'] = exec("cat {$config['btsync']['rootfolder']}version.txt");
-	$config['btsync']['rootfolder'] = "{$install_dir}btsync/";
-	$config['btsync']['backupfolder'] = $config['btsync']['rootfolder']."backup/";
-	$config['btsync']['updatefolder'] = $config['btsync']['rootfolder']."update/";
-    $i = 0;
-    if ( is_array($config['rc']['postinit'] ) && is_array( $config['rc']['postinit']['cmd'] ) ) {
-        for ($i; $i < count($config['rc']['postinit']['cmd']);) {
-            if (preg_match('/btsync/', $config['rc']['postinit']['cmd'][$i])) break;
-            ++$i;
-        }
+if ( !isset($config['btsync']) || !is_array($config['btsync'])) $config['btsync'] = array();
+$config['btsync']['appname'] = $appname;
+$config['btsync']['rootfolder'] = "{$install_dir}btsync/";
+$config['btsync']['backupfolder'] = $config['btsync']['rootfolder']."backup/";
+$config['btsync']['updatefolder'] = $config['btsync']['rootfolder']."update/";
+$config['btsync']['product_executable'] = "rslsync"; 
+$config['btsync']['version'] = exec("cat {$config['btsync']['rootfolder']}version.txt");
+//--- remove an existing old format entry
+if (is_array($config['rc']) && is_array($config['rc']['postinit']) && is_array( $config['rc']['postinit']['cmd'])) {
+    for ($i = 0; $i < count($config['rc']['postinit']['cmd']); ++$i) {
+        if (preg_match('/btsync/', $config['rc']['postinit']['cmd'][$i])) unset($config['rc']['postinit']['cmd'][$i]);
     }
-    $config['rc']['postinit']['cmd'][$i] = $config['btsync']['rootfolder']."btsync_start.php";
-    if ($arch == "i386" || $arch == "x86") { $config['btsync']['architecture'] = "i386"; }
-    else { $config['btsync']['architecture'] = "x64"; }
-//                                       https://download-cdn.getsync.com/stable/FreeBSD-  x64                                /BitTorrent-Sync_freebsd_  x64                                .tar.gz
-	$config['btsync']['download_url'] = "https://download-cdn.getsync.com/stable/FreeBSD-".$config['btsync']['architecture']."/BitTorrent-Sync_freebsd_".$config['btsync']['architecture'].".tar.gz";
-	$config['btsync']['previous_url'] = $config['btsync']['download_url'];
-    mwexec ("fetch -o {$config['btsync']['rootfolder']}stable {$config['btsync']['download_url']}", true);
-    exec ("cd {$config['btsync']['rootfolder']} && tar -xzvf stable");
-    exec ("rm {$config['btsync']['rootfolder']}stable");
-    if ( !is_file ($config['btsync']['rootfolder'].'btsync') ) { echo 'Executable file "btsync" not found, installation aborted!'; exit (3); }
-    $config['btsync']['product_version'] = exec ($config['btsync']['rootfolder']."btsync --help | awk '/".$appname."/ {print $3}'");
-    if (!is_dir ($config['btsync']['rootfolder'].'.sync')) { exec ("mkdir -p ".$config['btsync']['rootfolder'].'.sync'); }
-    if (!is_dir ($config['btsync']['backupfolder'])) { exec ("mkdir -p ".$config['btsync']['backupfolder']); }
-    if (!is_dir ($config['btsync']['updatefolder'])) { exec ("mkdir -p ".$config['btsync']['updatefolder']); }
-   	exec ("cp ".$config['btsync']['rootfolder']."btsync ".$config['btsync']['backupfolder']."btsync-".$config['btsync']['product_version']);
-    $config['btsync']['size'] = exec ("fetch -s {$config['btsync']['download_url']}");
-    if ($config['btsync']['product_version'] == '') { $config['btsync']['product_version'] = 'n/a'; }
-    if ($config['btsync']['size'] == '') { $config['btsync']['size'] = 'n/a'; }
-    write_config();
-    require_once("{$config['btsync']['rootfolder']}btsync_start.php");
-    echo "\n".$appname." Version ".$config['btsync']['product_version']." installed";
-    echo "\n\nInstallation completed, use WebGUI | Extensions | ".$appname." to configure \nthe application (don't forget to refresh the WebGUI before use)!\n";
+}
+
+// remove existing entries for new rc format
+$sphere_array = &$config['rc']['param'];
+if (is_array($config['rc']) && is_array($config['rc']['param'])) {
+    for ($i = 0; $i < count($config['rc']['param']); ++$i) {
+		if (false !== ($index = array_search_ex("{$config['btsync']['appname']} Extension", $sphere_array, 'name'))) unset($sphere_array[$index]);
+	}
+}
+
+if ($release[0] >= 11.0) {	// new rc format
+	// postinit command
+	$rc_param = [];
+	$rc_param['uuid'] = uuid();
+	$rc_param['name'] = "{$appname} Extension";
+	$rc_param['value'] = "/usr/local/bin/php-cgi -f {$config['btsync']['rootfolder']}bts-start.php";
+	$rc_param['comment'] = "Start {$appname} (Resilio Sync)";
+	$rc_param['typeid'] = '2';
+	$rc_param['enable'] = true;
+	$config['rc']['param'][] = $rc_param;
+	$config['btsync']['rc_uuid_start'] = $rc_param['uuid'];
+	
+	unset($rc_param);
+	/* shutdown command */
+	$rc_param = [];
+	$rc_param['uuid'] = uuid();
+	$rc_param['name'] = "{$appname} Extension";
+	$rc_param['value'] = "killall {$config['btsync']['product_executable']}";
+	$rc_param['comment'] = "Stop {$appname} (Resilio Sync)";
+	$rc_param['typeid'] = '3';
+	$rc_param['enable'] = true;
+	$config['rc']['param'][] = $rc_param;
+	$config['btsync']['rc_uuid_stop'] = $rc_param['uuid'];
+}
+else $config['rc']['postinit']['cmd'][$i] = "/usr/local/bin/php-cgi -f {$config['btsync']['rootfolder']}bts-start.php";
+
+if ($arch == "i386" || $arch == "x86") { $config['btsync']['architecture'] = "i386"; }
+else { $config['btsync']['architecture'] = "x64"; }
+//  2016.01.30: https://download-cdn.getsync.com/stable/FreeBSD-{ARCHITECTURE}/BitTorrent-Sync_freebsd_{ARCHITECTURE}.tar.gz
+//  2016.10.09: https://download-cdn.resilio.com/stable/FreeBSD-x64/resilio-sync_freebsd_x64.tar.gz
+$config['btsync']['download_url'] = "https://download-cdn.resilio.com/stable/FreeBSD-".$config['btsync']['architecture']."/resilio-sync_freebsd_".$config['btsync']['architecture'].".tar.gz";
+$config['btsync']['previous_url'] = $config['btsync']['download_url'];
+if (!is_dir ($config['btsync']['rootfolder'].'.sync')) { exec ("mkdir -p ".$config['btsync']['rootfolder'].'.sync'); }
+if (!is_dir ($config['btsync']['backupfolder'])) { exec ("mkdir -p ".$config['btsync']['backupfolder']); }
+if (!is_dir ($config['btsync']['updatefolder'])) { exec ("mkdir -p ".$config['btsync']['updatefolder']); }
+$return_val = mwexec ("fetch -o {$config['btsync']['rootfolder']}stable {$config['btsync']['download_url']}", true);
+if ($return_val != 0) {
+    echo "\n"."Download of latest Resilio Sync executable failed, maybe the download URL has changed!";
+    echo "\n"."After the installation proceed to Extensions|BitTorrent Sync|Maintenance, check/enter a new download URL, save and fetch/install the Resilio Sync executable!";
 }
 else {
-	$config['btsync']['appname'] = $appname;
-    $config['btsync']['version'] = exec("cat {$config['btsync']['rootfolder']}version.txt");
-	$config['btsync']['rootfolder'] = "{$install_dir}btsync/";
-	$config['btsync']['backupfolder'] = $config['btsync']['rootfolder']."backup/";
-	$config['btsync']['updatefolder'] = $config['btsync']['rootfolder']."update/";
-    $i = 0;
-    if ( is_array($config['rc']['postinit'] ) && is_array( $config['rc']['postinit']['cmd'] ) ) {
-        for ($i; $i < count($config['rc']['postinit']['cmd']);) {
-            if (preg_match('/btsync/', $config['rc']['postinit']['cmd'][$i])) break;
-            ++$i;
-        }
-    }
-    $config['rc']['postinit']['cmd'][$i] = $config['btsync']['rootfolder']."btsync_start.php";
-    if ($arch == "i386" || $arch == "x86") { $config['btsync']['architecture'] = "i386"; }
-    else { $config['btsync']['architecture'] = "x64"; }
-	$config['btsync']['download_url'] = "https://download-cdn.getsync.com/stable/FreeBSD-".$config['btsync']['architecture']."/BitTorrent-Sync_freebsd_".$config['btsync']['architecture'].".tar.gz";
-	$config['btsync']['previous_url'] = $config['btsync']['download_url'];
-    mwexec ("fetch -o {$config['btsync']['rootfolder']}stable {$config['btsync']['download_url']}", true);
-    exec ("cd {$config['btsync']['rootfolder']} && tar -xzvf stable");
-    exec ("rm {$config['btsync']['rootfolder']}stable");
-    if ( !is_file ($config['btsync']['rootfolder'].'btsync') ) { echo 'Executable file "btsync" not found, installation aborted!'; exit (3); }
-    $config['btsync']['product_version'] = exec ($config['btsync']['rootfolder']."btsync --help | awk '/".$appname."/ {print $3}'");
-    if (!is_dir ($config['btsync']['rootfolder'].'.sync')) { exec ("mkdir -p ".$config['btsync']['rootfolder'].'.sync'); }
-    if (!is_dir ($config['btsync']['backupfolder'])) { exec ("mkdir -p ".$config['btsync']['backupfolder']); }
-    if (!is_dir ($config['btsync']['updatefolder'])) { exec ("mkdir -p ".$config['btsync']['updatefolder']); }
-   	exec ("cp ".$config['btsync']['rootfolder']."btsync ".$config['btsync']['backupfolder']."btsync-".$config['btsync']['product_version']);
-    $config['btsync']['size'] = exec ("fetch -s {$config['btsync']['download_url']}");
+    mwexec ("cd {$config['btsync']['rootfolder']} && tar -xf stable", true);
+	mwexec ("rm {$config['btsync']['rootfolder']}stable", true);
+    $config['btsync']['product_version'] = exec ("{$config['btsync']['rootfolder']}{$config['btsync']['product_executable']} --help | awk '/Sync/ {print $3}'");
+   	exec ("cp {$config['btsync']['rootfolder']}{$config['btsync']['product_executable']} {$config['btsync']['backupfolder']}{$config['btsync']['product_executable']}-{$config['btsync']['product_version']}");
+    $config['btsync']['size'] = exec("fetch -s {$config['btsync']['download_url']}");
     if ($config['btsync']['product_version'] == '') { $config['btsync']['product_version'] = 'n/a'; }
     if ($config['btsync']['size'] == '') { $config['btsync']['size'] = 'n/a'; }
-    write_config();
-    require_once("{$config['btsync']['rootfolder']}btsync_start.php");
+	echo "{$config['btsync']['appname']} Extension Version {$config['btsync']['version']} installed";
+	echo "\nResilio Sync Version {$config['btsync']['product_version']} installed\n";
 }
+write_config();
+require_once("{$config['btsync']['rootfolder']}bts-start.php");
+echo "\nInstallation completed, use WebGUI | Extensions | ".$appname." to configure \nthe application (don't forget to refresh the WebGUI before use)!\n";
 ?>

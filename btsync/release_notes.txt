@@ -1,7 +1,16 @@
 ﻿Version Date        Description
+0.7.1	2016.11.18  C: new standard download URL for executeable:
+                        https://download-cdn.resilio.com/stable/FreeBSD-{ARCHITECTURE}/resilio-sync_freebsd_{ARCHITECTURE}.tar.gz";
+                    C: code improvements / cleanup for new executeables
+                    C: updated Russian language
+                    N: added Spanish language
+                    N: added Swedish language
+                    N: added Turkish language
+                    N: added Ukrainian language
+                    N: introduced new comand scripts rc format for N4F 11.x compatibility
 0.7     2016.01.30  new major release
                     C: moved host to GitHub
-                    C: new standard download URL:
+                    C: new standard download URL for executeable
                        https://download-cdn.getsync.com/stable/FreeBSD-{ARCHITECTURE}/BitTorrent-Sync_freebsd_{ARCHITECTURE}.tar.gz
                     C: use natsort for backup list
                     F: error while parsing config file: Invalid key 'max_file_size_diff_for_patching'

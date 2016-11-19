@@ -48,9 +48,9 @@ if ( !is_link ( "/usr/local/www/btsync_log.inc")) { exec ("ln -s /usr/local/www/
 if ( !is_link ( "/usr/local/www/btsync_update.php")) { exec ("ln -s /usr/local/www/ext/btsync/btsync_update.php /usr/local/www/btsync_update.php"); }
 if ( !is_link ( "/usr/local/www/btsync_update_extension.php")) { exec ("ln -s /usr/local/www/ext/btsync/btsync_update_extension.php /usr/local/www/btsync_update_extension.php"); }
 if (isset($config['btsync']['enable'])) { 
-    exec("logger btsync: enabled, start btsync ...");
+    exec("logger btsync: enabled, starting ...");
     exec($config['btsync']['command']);
-    if (exec('ps acx | grep btsync')) { exec("logger btsync: startup OK"); }    
+    if (exec("ps acx | grep {$config['btsync']['product_executable']}")) { exec("logger btsync: startup OK"); }    
     else { exec("logger btsync: startup NOT ok" ); } 
 }
 ?>
