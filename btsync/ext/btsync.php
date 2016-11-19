@@ -113,7 +113,6 @@ if (isset($_POST['save']) && $_POST['save']) {
 	if (empty($input_errors)) {
 		if (isset($_POST['enable'])) {
             $config['btsync']['enable'] = isset($_POST['enable']) ? true : false;
-            if ($_POST['who'] != $config['btsync']['who']) { exec("chown {$_POST['who']} {$config['btsync']['rootfolder']}*"); } // btsync & sync.conf
             $config['btsync']['who'] = $_POST['who'];
             $config['btsync']['listen_to_all'] = isset($_POST['listen_to_all']) ? true : false;
             $config['btsync']['if'] = $_POST['if'];
@@ -144,7 +143,7 @@ if (isset($_POST['save']) && $_POST['save']) {
             $sync_conf['webui']['force_https'] = isset($_POST['force_https']) ? true : false;
             $sync_conf['webui']['ssl_certificate'] = !empty($_POST['ssl_certificate']) ? $_POST['ssl_certificate'] : "";
             $sync_conf['webui']['ssl_private_key'] = !empty($_POST['ssl_private_key']) ? $_POST['ssl_private_key'] : "";
-            $sync_conf['webui']['directory_root'] = !empty($_POST['directory_root']) ? $_POST['directory_root'] : "";
+            $sync_conf['directory_root'] = !empty($_POST['directory_root']) ? $_POST['directory_root'] : "";
             if (!empty($_POST['dir_whitelist'])) { $sync_conf['webui']['dir_whitelist'] = explode(",", str_replace(" ", "", rtrim($_POST['dir_whitelist'],','))); } 
             else { unset($sync_conf['webui']['dir_whitelist']); } 
             $sync_conf['config_refresh_interval'] = (is_numeric($_POST['config_refresh_interval']) ? (int)$_POST['config_refresh_interval'] : 3600);
@@ -171,16 +170,17 @@ if (isset($_POST['save']) && $_POST['save']) {
             $sync_conf['sync_max_time_diff'] = (is_numeric($_POST['sync_max_time_diff']) ? (int)$_POST['sync_max_time_diff'] : 600);
             $sync_conf['sync_trash_ttl'] = (is_numeric($_POST['sync_trash_ttl']) ? (int)$_POST['sync_trash_ttl'] : 30);
     
-    		$config['btsync']['command'] = "su {$config['btsync']['who']} -c '{$config['btsync']['rootfolder']}btsync --config {$config['btsync']['rootfolder']}sync.conf'";
+    		$config['btsync']['command'] = "su {$config['btsync']['who']} -c '{$config['btsync']['rootfolder']}{$config['btsync']['product_executable']} --config {$config['btsync']['rootfolder']}sync.conf'";
     		$savemsg = get_std_save_message(write_config());
     
             file_put_contents($config['btsync']['rootfolder']."sync.conf", json_encode($sync_conf, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ));
             if (json_last_error() > 0) { $input_errors[] = gettext('Error during encoding/writing sync.conf file with error number: ').json_last_error(); };
     
-            exec("killall btsync");
+            killbyname($config['btsync']['product_executable']);
             $return_val = 0;
-            while( $return_val == 0 ) { sleep(1); exec('ps acx | grep btsync', $output, $return_val); }
+            while( $return_val == 0 ) { sleep(1); exec("ps acx | grep {$config['btsync']['product_executable']}", $output, $return_val); }
             unset ($output);
+            mwexec("chown -R {$config['btsync']['who']} {$config['btsync']['rootfolder']}", true);
             exec($config['btsync']['command'], $output, $return_val);
             if ($return_val != 0) { $input_errors = $output; }
             if (isset($config['btsync']['enable_schedule'])) {  // if cronjobs exists -> activate
@@ -260,7 +260,8 @@ if (isset($_POST['save']) && $_POST['save']) {
             }   // end of activate cronjobs
         }   // end of enable extension
 		else { 
-            exec("killall btsync"); $savemsg = $savemsg." ".$config['btsync']['appname'].gettext(" is now disabled!"); 
+            killbyname($config['btsync']['product_executable']);
+			$savemsg = $savemsg." ".$config['btsync']['appname'].gettext(" is now disabled!"); 
             $config['btsync']['enable'] = isset($_POST['enable']) ? true : false;
             write_config();
             if (isset($config['btsync']['enable_schedule'])) {  // if cronjobs exists -> deactivate
@@ -405,7 +406,8 @@ if (isset($config['vinterfaces']['lagg']) && is_array($config['vinterfaces']['la
 if (empty($pconfig['if']) && is_array($a_interface)) $pconfig['if'] = key($a_interface);
 
 function get_process_info() {
-    if (exec('ps acx | grep btsync')) { $state = '<a style=" background-color: #00ff00; ">&nbsp;&nbsp;<b>'.gettext("running").'</b>&nbsp;&nbsp;</a>'; }
+    global $config;
+    if (exec("ps acx | grep {$config['btsync']['product_executable']}")) { $state = '<a style=" background-color: #00ff00; ">&nbsp;&nbsp;<b>'.gettext("running").'</b>&nbsp;&nbsp;</a>'; }
     else { $state = '<a style=" background-color: #ff0000; ">&nbsp;&nbsp;<b>'.gettext("stopped").'</b>&nbsp;&nbsp;</a>'; }
 	return ($state);
 }
@@ -543,7 +545,12 @@ function as_change() {
 }
 //-->
 </script>
-<form action="btsync.php" method="post" name="iform" id="iform">
+<!-- The Spinner Elements -->
+<?php include("ext/btsync/spinner.inc");?>
+<script src="ext/btsync/spin.min.js"></script>
+<!-- use: onsubmit="spinner()" within the form tag -->
+
+<form action="btsync.php" method="post" name="iform" id="iform" onsubmit="spinner()">
 <?php bindtextdomain("nas4free", "/usr/local/share/locale-bts"); ?>
     <table width="100%" border="0" cellpadding="0" cellspacing="0">
 	<tr><td class="tabnavtbl">

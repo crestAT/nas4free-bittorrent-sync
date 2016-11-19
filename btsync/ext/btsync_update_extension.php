@@ -55,7 +55,7 @@ function cronjob_process_updatenotification($mode, $data) {
 		case UPDATENOTIFY_MODE_MODIFIED:
 			break;
 		case UPDATENOTIFY_MODE_DIRTY:
-			if (is_array($config['cron']['job'])) {
+        	if (is_array($config['cron']) && is_array($config['cron']['job'])) {
 				$index = array_search_ex($data, $config['cron']['job'], "uuid");
 				if (false !== $index) {
 					unset($config['cron']['job'][$index]);
@@ -70,8 +70,8 @@ function cronjob_process_updatenotification($mode, $data) {
 if (isset($_POST['ext_remove']) && $_POST['ext_remove']) {
     $install_dir = dirname($config['btsync']['rootfolder']);
 // kill running process
-    exec("killall -KILL btsync");
-// remove application section
+	killbyname($config['btsync']['product_executable']);
+// remove application section - old rc format
     if ( is_array($config['rc']['postinit'] ) && is_array( $config['rc']['postinit']['cmd'] ) ) {
 		for ($i = 0; $i < count($config['rc']['postinit']['cmd']);) {
     		if (preg_match('/btsync/', $config['rc']['postinit']['cmd'][$i])) {	unset($config['rc']['postinit']['cmd'][$i]);} else{}
@@ -84,6 +84,19 @@ if (isset($_POST['ext_remove']) && $_POST['ext_remove']) {
 		++$i;
 		}
 	}
+// remove application section - old rc format
+if (is_array($config['rc']) && is_array($config['rc']['postinit']) && is_array( $config['rc']['postinit']['cmd'])) {
+    for ($i = 0; $i < count($config['rc']['postinit']['cmd']); ++$i) {
+        if (preg_match('/btsync/', $config['rc']['postinit']['cmd'][$i])) unset($config['rc']['postinit']['cmd'][$i]);
+    }
+}
+// remove application section - new rc format
+$sphere_array = &$config['rc']['param'];
+if (is_array($config['rc']) && is_array($config['rc']['param'])) {
+    for ($i = 0; $i < count($config['rc']['param']); ++$i) {
+		if (false !== ($index = array_search_ex("{$config['btsync']['appname']} Extension", $sphere_array, 'name'))) unset($sphere_array[$index]);
+	}
+}
 // unlink created  links
 	if (is_dir ("/usr/local/www/ext/btsync")) {
 	foreach ( glob( "{$config['btsync']['rootfolder']}ext/*.php" ) as $file ) {
@@ -94,20 +107,15 @@ if (isset($_POST['ext_remove']) && $_POST['ext_remove']) {
 // remove cronjobs
     if (isset($config['btsync']['enable_schedule'])) {
     	updatenotify_set("cronjob", UPDATENOTIFY_MODE_DIRTY, $config['btsync']['schedule_uuid_startup']);
-    	if (is_array($config['cron']['job'])) {
-    				$index = array_search_ex($data, $config['cron']['job'], "uuid");
-    				if (false !== $index) {
-    					unset($config['cron']['job'][$index]);
-    				}
-    			}
-    	write_config();
+    	if (is_array($config['cron']) && is_array($config['cron']['job'])) {
+			$index = array_search_ex($data, $config['cron']['job'], "uuid");
+			if (false !== $index) unset($config['cron']['job'][$index]);
+		}
     	updatenotify_set("cronjob", UPDATENOTIFY_MODE_DIRTY, $config['btsync']['schedule_uuid_closedown']);
-    	if (is_array($config['cron']['job'])) {
-    				$index = array_search_ex($data, $config['cron']['job'], "uuid");
-    				if (false !== $index) {
-    					unset($config['cron']['job'][$index]);
-    				}
-    			}
+    	if (is_array($config['cron']) && is_array($config['cron']['job'])) {
+			$index = array_search_ex($data, $config['cron']['job'], "uuid");
+			if (false !== $index) unset($config['cron']['job'][$index]);
+		}
     	write_config();
         $retval = 0;
         if (!file_exists($d_sysrebootreqd_path)) {
@@ -133,7 +141,6 @@ if (isset($_POST['ext_update']) && $_POST['ext_update']) {
     if ($return_val == 0) {
         require_once("{$install_dir}/bts-install.php"); 
         header("Refresh:8");;
-//        $savemsg = sprintf(gettext("Update to version %s completed!"), $config['btsync']['version']);
     }
     else { $input_errors[] = sprintf(gettext("Archive file %s not found, installation aborted!"), "{$install_dir}/bts-install.php"); }
 }
