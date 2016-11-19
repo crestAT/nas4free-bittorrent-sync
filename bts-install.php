@@ -52,6 +52,8 @@ $release = explode("-", exec("uname -r"));
 if ($release[0] >= 9.3) $verify_hostname = "--no-verify-hostname";
 else $verify_hostname = "";
 
+exec("killall btsync");		// to be sure rslsync can startup successfully
+
 $vs = str_replace(".", "", $vstg);                          
 $return_val = mwexec("fetch {$verify_hostname} -vo {$install_dir}master.zip 'https://github.com/crestAT/nas4free-bittorrent-sync/releases/download/{$vstg}/bts-{$vs}.zip'", true);
 if ($return_val == 0) {
