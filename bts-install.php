@@ -126,6 +126,6 @@ ext_create_rc_commands($appname, $configuration['rc_uuid_start'], $configuration
 ext_save_config($config_file, $configuration);
 
 if ($new_installation) echo "\nInstallation completed, use WebGUI | Extensions | ".$appname." to configure the application!\n";
-else $savemsg = sprintf(gettext("Update to version %s completed!"), $configuration['version'];
+else $savemsg = sprintf(gettext("Update to version %s completed!"), $configuration['version']);
 require_once("{$configuration['rootfolder']}bts-start.php");
 ?>
