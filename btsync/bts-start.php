@@ -66,7 +66,7 @@ else if ($configuration['enable']) {
 		    mwexec("logger btsync-extension: enabled, start {$configuration['product_executable']} ...");
 		    exec($configuration['command']);
 		    sleep(5);														// give time to startup
-		    if (exec('ps acx | grep {$configuration['product_executable']}')) { mwexec("logger btsync-extension: startup OK"); }
+		    if (exec("ps acx | grep {$configuration['product_executable']}")) { mwexec("logger btsync-extension: startup OK"); }
 		    else { mwexec("logger btsync-extension: startup NOT ok" ); }
 		}
 	}
