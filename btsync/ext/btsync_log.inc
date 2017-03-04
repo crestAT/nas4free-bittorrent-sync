@@ -2,7 +2,7 @@
 /*
 	diag_log.inc
 
-    Copyright (c) 2013 - 2016 Andreas Schmidhuber
+    Copyright (c) 2013 - 2017 Andreas Schmidhuber <info@a3s.at>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -34,6 +34,11 @@ require_once("rc.inc");
 
 bindtextdomain("nas4free", "/usr/local/share/locale-bts");
 
+$config_file = "ext/btsync/btsync.conf";
+require_once("ext/btsync/extension-lib.inc");
+if (($configuration = ext_load_config($config_file)) === false) $input_errors[] = sprintf(gettext("Configuration file %s not found!"), "btsync.conf");
+if (!isset($configuration['rootfolder']) && !is_dir($configuration['rootfolder'] )) $input_errors[] = gettext("Extension installed with fault");
+
 // Get the location of the log files (may be modified via rc.conf variables).
 $clogdir = rc_getenv_ex("clog_logdir", $g['varlog_path']);
 
@@ -42,7 +47,7 @@ $loginfo = array(
 	array(
 		"visible" => TRUE,
 		"desc" => gettext("Notifications"),
-		"logfile" => "{$config['btsync']['storage_path']}/sync.log",
+		"logfile" => "{$configuration['storage_path']}/sync.log",
 		"filename" => "sync.log",
 		"type" => "plain",
 		"pattern" => "/^(\S+\s+\S+)\s+(.*)$/",
@@ -80,8 +85,8 @@ function log_get_contents($logfile, $type) {
 			break;
 
 		case "plain":
-		    $filter_icf = (isset($config['btsync']['filter_icf']) ? "| grep -v \"Incoming connection from\"" : "");
-		    $filter = (!empty($config['btsync']['filter_str']) ? "| grep \"{$config['btsync']['filter_str']}\"" : "");
+		    $filter_icf = (isset($configuration['filter_icf']) ? "| grep -v \"Incoming connection from\"" : "");
+		    $filter = (!empty($configuration['filter_str']) ? "| grep \"{$configuration['filter_str']}\"" : "");
 		    $filter_str = ($_POST['searchstring'] == '') ? "" : "| grep -i \"".htmlspecialchars($_POST['searchstring'])."\"";
 			exec("/bin/cat {$logfile} | /usr/bin/tail {$param} {$filter_icf} {$filter} {$filter_str}", $content);
 	}

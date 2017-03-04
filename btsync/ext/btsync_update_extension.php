@@ -2,7 +2,7 @@
 /*
     btsync_update_extension.php
     
-    Copyright (c) 2013 - 2016 Andreas Schmidhuber
+    Copyright (c) 2013 - 2017 Andreas Schmidhuber <info@a3s.at>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -33,17 +33,23 @@ require("auth.inc");
 require("guiconfig.inc");
 
 bindtextdomain("nas4free", "/usr/local/share/locale-bts");
-$pgtitle = array(gettext("Extensions"), $config['btsync']['appname']." ".$config['btsync']['version'], gettext("Extension Maintenance"));
 
-if (is_file("{$config['btsync']['updatefolder']}oneload")) {
-    require_once("{$config['btsync']['updatefolder']}oneload");
+$config_file = "ext/btsync/btsync.conf";
+require_once("ext/btsync/extension-lib.inc");
+if (($configuration = ext_load_config($config_file)) === false) $input_errors[] = sprintf(gettext("Configuration file %s not found!"), "btsync.conf");
+if (!isset($configuration['rootfolder']) && !is_dir($configuration['rootfolder'] )) $input_errors[] = gettext("Extension installed with fault");
+
+$pgtitle = array(gettext("Extensions"), $configuration['appname']." ".$configuration['version'], gettext("Extension Maintenance"));
+
+if (is_file("{$configuration['updatefolder']}oneload")) {
+    require_once("{$configuration['updatefolder']}oneload");
 }
 
-$return_val = mwexec("fetch -o {$config['btsync']['updatefolder']}version.txt https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/btsync/version.txt", true);
+$return_val = mwexec("fetch -o {$configuration['updatefolder']}version.txt https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/btsync/version.txt", false);
 if ($return_val == 0) { 
-    $server_version = exec("cat {$config['btsync']['updatefolder']}version.txt"); 
-    if ($server_version != $config['btsync']['version']) { $savemsg = sprintf(gettext("New extension version %s available, push '%s' button to install the new version!"), $server_version, gettext("Update Extension")); }
-    mwexec("fetch -o {$config['btsync']['rootfolder']}release_notes.txt https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/btsync/release_notes.txt", false);
+    $server_version = exec("cat {$configuration['updatefolder']}version.txt"); 
+    if ($server_version != $configuration['version']) { $savemsg = sprintf(gettext("New extension version %s available, push '%s' button to install the new version!"), $server_version, gettext("Update Extension")); }
+    mwexec("fetch -o {$configuration['rootfolder']}release_notes.txt https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/btsync/release_notes.txt", false);
 }
 else { $server_version = gettext("Unable to retrieve version from server!"); }
 
@@ -68,50 +74,28 @@ function cronjob_process_updatenotification($mode, $data) {
 }
 
 if (isset($_POST['ext_remove']) && $_POST['ext_remove']) {
-    $install_dir = dirname($config['btsync']['rootfolder']);
+    $install_dir = dirname($configuration['rootfolder']);
 // kill running process
-	killbyname($config['btsync']['product_executable']);
-// remove application section - old rc format
-    if ( is_array($config['rc']['postinit'] ) && is_array( $config['rc']['postinit']['cmd'] ) ) {
-		for ($i = 0; $i < count($config['rc']['postinit']['cmd']);) {
-    		if (preg_match('/btsync/', $config['rc']['postinit']['cmd'][$i])) {	unset($config['rc']['postinit']['cmd'][$i]);} else{}
-		++$i;
-		}
-	}
-	if ( is_array($config['rc']['shutdown'] ) && is_array( $config['rc']['shutdown']['cmd'] ) ) {
-		for ($i = 0; $i < count($config['rc']['shutdown']['cmd']); ) {
-            if (preg_match('/btsync/', $config['rc']['shutdown']['cmd'][$i])) {	unset($config['rc']['shutdown']['cmd'][$i]); } else {}
-		++$i;
-		}
-	}
-// remove application section - old rc format
-if (is_array($config['rc']) && is_array($config['rc']['postinit']) && is_array( $config['rc']['postinit']['cmd'])) {
-    for ($i = 0; $i < count($config['rc']['postinit']['cmd']); ++$i) {
-        if (preg_match('/btsync/', $config['rc']['postinit']['cmd'][$i])) unset($config['rc']['postinit']['cmd'][$i]);
-    }
-}
-// remove application section - new rc format
-$sphere_array = &$config['rc']['param'];
-if (is_array($config['rc']) && is_array($config['rc']['param'])) {
-    for ($i = 0; $i < count($config['rc']['param']); ++$i) {
-		if (false !== ($index = array_search_ex("{$config['btsync']['appname']} Extension", $sphere_array, 'name'))) unset($sphere_array[$index]);
-	}
-}
+	killbyname($configuration['product_executable']);
+// remove start/stop commands
+	ext_remove_rc_commands("btsync");
 // unlink created  links
 	if (is_dir ("/usr/local/www/ext/btsync")) {
-	foreach ( glob( "{$config['btsync']['rootfolder']}ext/*.php" ) as $file ) {
-	$file = str_replace("{$config['btsync']['rootfolder']}ext/", "/usr/local/www", $file);
+	foreach ( glob( "{$configuration['rootfolder']}ext/*.php" ) as $file ) {
+	$file = str_replace("{$configuration['rootfolder']}ext/", "/usr/local/www", $file);
 	if ( is_link( $file ) ) { unlink( $file ); } else {} }
 	mwexec ("rm -rf /usr/local/www/ext/btsync");
+	mwexec("rmdir -p /usr/local/www/ext");    // to prevent empty extensions menu entry in top GUI menu if there are no other extensions installed
 	}
 // remove cronjobs
-    if (isset($config['btsync']['enable_schedule'])) {
-    	updatenotify_set("cronjob", UPDATENOTIFY_MODE_DIRTY, $config['btsync']['schedule_uuid_startup']);
+    if (isset($configuration['enable_schedule'])) {
+    	updatenotify_set("cronjob", UPDATENOTIFY_MODE_DIRTY, $configuration['schedule_uuid_startup']);
     	if (is_array($config['cron']) && is_array($config['cron']['job'])) {
 			$index = array_search_ex($data, $config['cron']['job'], "uuid");
 			if (false !== $index) unset($config['cron']['job'][$index]);
 		}
-    	updatenotify_set("cronjob", UPDATENOTIFY_MODE_DIRTY, $config['btsync']['schedule_uuid_closedown']);
+    	write_config();
+    	updatenotify_set("cronjob", UPDATENOTIFY_MODE_DIRTY, $configuration['schedule_uuid_closedown']);
     	if (is_array($config['cron']) && is_array($config['cron']['job'])) {
 			$index = array_search_ex($data, $config['cron']['job'], "uuid");
 			if (false !== $index) unset($config['cron']['job'][$index]);
@@ -129,15 +113,13 @@ if (is_array($config['rc']) && is_array($config['rc']['param'])) {
         	updatenotify_delete("cronjob");
         }
     }
-// remove application section from config.xml
-	if ( is_array($config['btsync'] ) ) { unset( $config['btsync'] ); write_config();}
 	header("Location:index.php");
 }
 
 if (isset($_POST['ext_update']) && $_POST['ext_update']) {
-    $install_dir = dirname($config['btsync']['rootfolder']);
+    $install_dir = dirname($configuration['rootfolder']);
 // download installer
-    $return_val = mwexec("fetch -vo {$install_dir}/bts-install.php https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/bts-install.php", true);
+    $return_val = mwexec("fetch -vo {$install_dir}/bts-install.php https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/bts-install.php", false);
     if ($return_val == 0) {
         require_once("{$install_dir}/bts-install.php"); 
         header("Refresh:8");;
@@ -178,7 +160,7 @@ function fetch_handler() {
         <?php if (!empty($savemsg)) print_info_box($savemsg);?>
         <table width="100%" border="0" cellpadding="6" cellspacing="0">
             <?php html_titleline(gettext("Extension Update"));?>
-			<?php html_text("ext_version_current", gettext("Installed version"), $config['btsync']['version']);?>
+			<?php html_text("ext_version_current", gettext("Installed version"), $configuration['version']);?>
 			<?php html_text("ext_version_server", gettext("Latest version"), $server_version);?>
 			<?php html_separator();?>
         </table>
@@ -195,7 +177,7 @@ function fetch_handler() {
 			<tr>
                 <td class="listt">
                     <div>
-                        <textarea style="width: 98%;" id="content" name="content" class="listcontent" cols="1" rows="25" readonly="readonly"><?php unset($lines); exec("/bin/cat {$config['btsync']['rootfolder']}release_notes.txt", $lines); foreach ($lines as $line) { echo $line."\n"; }?></textarea>
+                        <textarea style="width: 98%;" id="content" name="content" class="listcontent" cols="1" rows="25" readonly="readonly"><?php unset($lines); exec("/bin/cat {$configuration['rootfolder']}release_notes.txt", $lines); foreach ($lines as $line) { echo $line."\n"; }?></textarea>
                     </div>
                 </td>
 			</tr>

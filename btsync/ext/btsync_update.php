@@ -2,7 +2,7 @@
 /*
     btsync_update.php
     
-    Copyright (c) 2013 - 2016 Andreas Schmidhuber
+    Copyright (c) 2013 - 2017 Andreas Schmidhuber <info@a3s.at>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -33,17 +33,23 @@ require("auth.inc");
 require("guiconfig.inc");
 
 bindtextdomain("nas4free", "/usr/local/share/locale-bts");
-$pgtitle = array(gettext("Extensions"), $config['btsync']['appname']." ".$config['btsync']['version'], gettext("Maintenance"));
+
+$config_file = "ext/btsync/btsync.conf";
+require_once("ext/btsync/extension-lib.inc");
+if (($configuration = ext_load_config($config_file)) === false) $input_errors[] = sprintf(gettext("Configuration file %s not found!"), "btsync.conf");
+if (!isset($configuration['rootfolder']) && !is_dir($configuration['rootfolder'] )) $input_errors[] = gettext("Extension installed with fault");
+
+$pgtitle = array(gettext("Extensions"), $configuration['appname']." ".$configuration['version'], gettext("Maintenance"));
  
 if ($_SERVER['REQUEST_METHOD'] != 'POST') {
-    $size_server = exec("fetch -s {$config['btsync']['download_url']}", $size_server, $return_val);
+    $size_server = exec("fetch -s {$configuration['download_url']}", $size_server, $return_val);
     if ( $return_val == 0) {
-        if ($size_server != $config['btsync']['size']) {
-        $savemsg = sprintf(gettext("New %s version available - push '%s' button to download the new version!"), $config['btsync']['appname'], gettext("Fetch")); }
+        if ($size_server != $configuration['size']) {
+        $savemsg = sprintf(gettext("New %s version available - push '%s' button to download the new version!"), $configuration['appname'], gettext("Fetch")); }
     }
 }
 
-$pconfig['product_version_new'] = !empty($config['btsync']['product_version_new']) ? $config['btsync']['product_version_new'] : "n/a";
+$pconfig['product_version_new'] = !empty($configuration['product_version_new']) ? $configuration['product_version_new'] : "n/a";
 
 function fetch_file($file_url) {
     global $config;
@@ -52,36 +58,36 @@ function fetch_file($file_url) {
     global $pconfig;
         
     unset($input_errors);
-    $config['btsync']['size_new'] = exec ("fetch -s {$file_url}");
-	mwexec ("fetch -o {$config['btsync']['updatefolder']}stable {$file_url}", true);
-    exec ("cd {$config['btsync']['updatefolder']} && tar -xf stable");
-    if ( !is_file ("{$config['btsync']['updatefolder']}{$config['btsync']['product_executable']}") ) { $input_errors[] = gettext("Could not fetch file!"); }
+    $configuration['size_new'] = exec ("fetch -s {$file_url}");
+	mwexec ("fetch -o {$configuration['updatefolder']}stable {$file_url}", false);
+    exec ("cd {$configuration['updatefolder']} && tar -xf stable");
+    if ( !is_file ("{$configuration['updatefolder']}{$configuration['product_executable']}") ) { $input_errors[] = gettext("Could not fetch file!"); }
     else {
-    $pconfig['product_version_new'] = exec ("{$config['btsync']['updatefolder']}{$config['btsync']['product_executable']} --help | awk '/Sync/ {print $3}'");
+    $pconfig['product_version_new'] = exec ("{$configuration['updatefolder']}{$configuration['product_executable']} --help | awk '/Sync/ {print $3}'");
         if ($pconfig['product_version_new'] == '') { $pconfig['product_version_new'] = 'n/a'; $input_errors[] = gettext("Could not retrieve new version!"); }
         else {
-            if ("{$pconfig['product_version_new']}" == "{$config['btsync']['product_version']}") { $savemsg = gettext("No new version available!"); }
+            if ("{$pconfig['product_version_new']}" == "{$configuration['product_version']}") { $savemsg = gettext("No new version available!"); }
             else {
                 $savemsg = sprintf(gettext("New version %s available, push '"), $pconfig['product_version_new']).gettext('Install').gettext("' button to install the new version!");
             }
-            $config['btsync']['product_version_new'] = !empty($pconfig['product_version_new']) ? $pconfig['product_version_new'] : "n/a";
-            write_config();
+            $configuration['product_version_new'] = !empty($pconfig['product_version_new']) ? $pconfig['product_version_new'] : "n/a";
+			ext_save_config($config_file, $configuration);
         }
     }
 } 
 
 if (isset($_POST['save_url']) && $_POST['save_url']) {
     if (!empty($_POST['download_url'])) {
-        $config['btsync']['previous_url'] = $config['btsync']['download_url'];
-        $config['btsync']['download_url'] = $_POST['download_url'];
-        write_config();
+        $configuration['previous_url'] = $configuration['download_url'];
+        $configuration['download_url'] = $_POST['download_url'];
+		ext_save_config($config_file, $configuration);
         $savemsg = gettext("New download URL saved!");
     }
 }
 
 if (isset($_POST['revert_url']) && $_POST['revert_url']) {
-    $config['btsync']['download_url'] = $config['btsync']['previous_url'];
-    write_config();
+    $configuration['download_url'] = $configuration['previous_url'];
+	ext_save_config($config_file, $configuration);
     $savemsg = gettext("Previous download URL activated!");
 }
 
@@ -90,24 +96,24 @@ if (isset($_POST['get_file']) && $_POST['get_file']) {
 }
 
 if (isset($_POST['install_new']) && $_POST['install_new']) {
-    if (isset($config['btsync']['enable'])) { 
-		killbyname($config['btsync']['product_executable']);
+    if (isset($configuration['enable'])) { 
+		killbyname($configuration['product_executable']);
         $return_val = 0;
-        while( $return_val == 0 ) { sleep(1); exec("ps acx | grep {$config['btsync']['product_executable']}", $output, $return_val); }
+        while( $return_val == 0 ) { sleep(1); exec("ps acx | grep {$configuration['product_executable']}", $output, $return_val); }
     }
-    if (!copy($config['btsync']['updatefolder']."{$config['btsync']['product_executable']}", $config['btsync']['rootfolder']."{$config['btsync']['product_executable']}")) { $input_errors[] = gettext("Could not install new version!"); }
+    if (!copy($configuration['updatefolder']."{$configuration['product_executable']}", $configuration['rootfolder']."{$configuration['product_executable']}")) { $input_errors[] = gettext("Could not install new version!"); }
     else {
-        exec("chmod +x {$config['btsync']['rootfolder']}{$config['btsync']['product_executable']}");
-        if (isset($config['btsync']['enable'])) { exec($config['btsync']['command']); }
-        $config['btsync']['product_version'] = $pconfig['product_version_new'];
-        $config['btsync']['size'] = $config['btsync']['size_new'];
-	   	exec ("cp {$config['btsync']['product_executable']} {$config['btsync']['backupfolder']}{$config['btsync']['product_executable']}-{$config['btsync']['product_version']}");
-        write_config();
+        exec("chmod +x {$configuration['rootfolder']}{$configuration['product_executable']}");
+        if (isset($configuration['enable'])) { exec($configuration['command']); }
+        $configuration['product_version'] = $pconfig['product_version_new'];
+        $configuration['size'] = $configuration['size_new'];
+	   	exec ("cp {$configuration['product_executable']} {$configuration['backupfolder']}{$configuration['product_executable']}-{$configuration['product_version']}");
+		ext_save_config($config_file, $configuration);
         $savemsg = gettext("New version installed!");
     }	
 }
 
-if (isset($_POST['fetch']) && $_POST['fetch']) { fetch_file($config['btsync']['download_url']); }
+if (isset($_POST['fetch']) && $_POST['fetch']) { fetch_file($configuration['download_url']); }
 
 if ( isset( $_POST['delete_backup'] ) && $_POST['delete_backup'] ) {
     if ( !isset($_POST['installfile']) ) { $input_errors[] = gettext("No file selected to delete!") ; }
@@ -124,23 +130,23 @@ if ( isset( $_POST['install_backup'] ) && $_POST['install_backup'] ) {
     if ( !isset($_POST['installfile']) ) { $input_errors[] = gettext("No file selected to install!") ; }
     else {
         if (is_file($_POST['installfile'])) {
-            if (isset($config['btsync']['enable'])) { 
-	            killbyname($config['btsync']['product_executable']);
+            if (isset($configuration['enable'])) { 
+	            killbyname($configuration['product_executable']);
                 $return_val = 0;
-                while( $return_val == 0 ) { sleep(1); exec("ps acx | grep {$config['btsync']['product_executable']}", $output, $return_val); }
+                while( $return_val == 0 ) { sleep(1); exec("ps acx | grep {$configuration['product_executable']}", $output, $return_val); }
             }
-            if (!copy($_POST['installfile'], $config['btsync']['rootfolder']."{$config['btsync']['product_executable']}")) { $input_errors[] = gettext("Could not install backup version!"); }
+            if (!copy($_POST['installfile'], $configuration['rootfolder']."{$configuration['product_executable']}")) { $input_errors[] = gettext("Could not install backup version!"); }
             else {
-                if (isset($config['btsync']['enable'])) { exec($config['btsync']['command']); }
-    			$config['btsync']['product_version'] = exec ("{$config['btsync']['rootfolder']}{$config['btsync']['product_executable']} --help | awk '/Sync/ {print $3}'");
+                if (isset($configuration['enable'])) { exec($configuration['command']); }
+    			$configuration['product_version'] = exec ("{$configuration['rootfolder']}{$configuration['product_executable']} --help | awk '/Sync/ {print $3}'");
                 $pconfig['product_version_new'] = "n/a"; 
-                $config['btsync']['product_version_new'] = "n/a";
-                $config['btsync']['size'] = "n/a"; 
-                $config['btsync']['size_new'] = "n/a";
-				exec ("cp {$config['btsync']['product_executable']} {$config['btsync']['backupfolder']}{$config['btsync']['product_executable']}-{$config['btsync']['product_version']}");
-                write_config();
-                if (isset($config['btsync']['enable'])) { $savemsg = gettext("Backup version installed!"); }
-                else { $savemsg = sprintf(gettext("Backup version installed! Go to %s and enable, save & restart to run %s !"), gettext('Configuration'), $config['btsync']['appname']); }
+                $configuration['product_version_new'] = "n/a";
+                $configuration['size'] = "n/a"; 
+                $configuration['size_new'] = "n/a";
+				exec ("cp {$configuration['product_executable']} {$configuration['backupfolder']}{$configuration['product_executable']}-{$configuration['product_version']}");
+				ext_save_config($config_file, $configuration);
+                if (isset($configuration['enable'])) { $savemsg = gettext("Backup version installed!"); }
+                else { $savemsg = sprintf(gettext("Backup version installed! Go to %s and enable, save & restart to run %s !"), gettext('Configuration'), $configuration['appname']); }
             }
         }
         else { $input_errors[] = sprintf(gettext("File %s not found!"), $_POST['installfile']); }
@@ -171,19 +177,20 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
     if (isset($_POST['enable_schedule']) && ($_POST['startup'] == $_POST['closedown'])) { $input_errors[] = gettext("Startup and closedown hour must be different!"); }
     else {
         if (isset($_POST['enable_schedule'])) {
-            $config['btsync']['enable_schedule'] = isset($_POST['enable_schedule']) ? true : false;
-            $config['btsync']['schedule_startup'] = $_POST['startup'];
-            $config['btsync']['schedule_closedown'] = $_POST['closedown'];
+            $configuration['enable_schedule'] = isset($_POST['enable_schedule']) ? true : false;
+            $configuration['schedule_startup'] = $_POST['startup'];
+            $configuration['schedule_closedown'] = $_POST['closedown'];
     
             $cronjob = array();
+			if (!is_array($config['cron'])) $config['cron'] = [];
             $a_cronjob = &$config['cron']['job'];
-            $uuid = isset($config['btsync']['schedule_uuid_startup']) ? $config['btsync']['schedule_uuid_startup'] : false;
+            $uuid = isset($configuration['schedule_uuid_startup']) ? $configuration['schedule_uuid_startup'] : false;
             if (isset($uuid) && (FALSE !== ($cnid = array_search_ex($uuid, $a_cronjob, "uuid")))) {
             	$cronjob['enable'] = true;
             	$cronjob['uuid'] = $a_cronjob[$cnid]['uuid'];
-            	$cronjob['desc'] = "BitTorrent Sync startup (@ {$config['btsync']['schedule_startup']}:00)";
+            	$cronjob['desc'] = "BitTorrent Sync startup (@ {$configuration['schedule_startup']}:00)";
             	$cronjob['minute'] = $a_cronjob[$cnid]['minute'];
-            	$cronjob['hour'] = $config['btsync']['schedule_startup'];
+            	$cronjob['hour'] = $configuration['schedule_startup'];
             	$cronjob['day'] = $a_cronjob[$cnid]['day'];
             	$cronjob['month'] = $a_cronjob[$cnid]['month'];
             	$cronjob['weekday'] = $a_cronjob[$cnid]['weekday'];
@@ -193,13 +200,13 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
             	$cronjob['all_months'] = $a_cronjob[$cnid]['all_months'];
             	$cronjob['all_weekdays'] = $a_cronjob[$cnid]['all_weekdays'];
             	$cronjob['who'] = 'root';
-            	$cronjob['command'] = $config['btsync']['command']." && logger btsync: scheduled startup";
+            	$cronjob['command'] = $configuration['command']." && logger btsync: scheduled startup";
             } else {
             	$cronjob['enable'] = true;
             	$cronjob['uuid'] = uuid();
-            	$cronjob['desc'] = "BitTorrent Sync startup (@ {$config['btsync']['schedule_startup']}:00)";
+            	$cronjob['desc'] = "BitTorrent Sync startup (@ {$configuration['schedule_startup']}:00)";
             	$cronjob['minute'] = 0;
-            	$cronjob['hour'] = $config['btsync']['schedule_startup'];
+            	$cronjob['hour'] = $configuration['schedule_startup'];
             	$cronjob['day'] = true;
             	$cronjob['month'] = true;
             	$cronjob['weekday'] = true;
@@ -209,8 +216,8 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
             	$cronjob['all_months'] = 1;
             	$cronjob['all_weekdays'] = 1;
             	$cronjob['who'] = 'root';
-            	$cronjob['command'] = $config['btsync']['command']." && logger btsync: scheduled startup";
-                $config['btsync']['schedule_uuid_startup'] = $cronjob['uuid'];
+            	$cronjob['command'] = $configuration['command']." && logger btsync: scheduled startup";
+                $configuration['schedule_uuid_startup'] = $cronjob['uuid'];
             }
             if (isset($uuid) && (FALSE !== $cnid)) {
             		$a_cronjob[$cnid] = $cronjob;
@@ -224,14 +231,15 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
     
             unset ($cronjob);
             $cronjob = array();
+			if (!is_array($config['cron'])) $config['cron'] = [];
             $a_cronjob = &$config['cron']['job'];
-            $uuid = isset($config['btsync']['schedule_uuid_closedown']) ? $config['btsync']['schedule_uuid_closedown'] : false;
+            $uuid = isset($configuration['schedule_uuid_closedown']) ? $configuration['schedule_uuid_closedown'] : false;
             if (isset($uuid) && (FALSE !== ($cnid = array_search_ex($uuid, $a_cronjob, "uuid")))) {
             	$cronjob['enable'] = true;
             	$cronjob['uuid'] = $a_cronjob[$cnid]['uuid'];
-            	$cronjob['desc'] = "BitTorrent Sync closedown (@ {$config['btsync']['schedule_closedown']}:00)";
+            	$cronjob['desc'] = "BitTorrent Sync closedown (@ {$configuration['schedule_closedown']}:00)";
             	$cronjob['minute'] = $a_cronjob[$cnid]['minute'];
-            	$cronjob['hour'] = $config['btsync']['schedule_closedown'];
+            	$cronjob['hour'] = $configuration['schedule_closedown'];
             	$cronjob['day'] = $a_cronjob[$cnid]['day'];
             	$cronjob['month'] = $a_cronjob[$cnid]['month'];
             	$cronjob['weekday'] = $a_cronjob[$cnid]['weekday'];
@@ -241,13 +249,13 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
             	$cronjob['all_months'] = $a_cronjob[$cnid]['all_months'];
             	$cronjob['all_weekdays'] = $a_cronjob[$cnid]['all_weekdays'];
             	$cronjob['who'] = 'root';
-            	$cronjob['command'] = "killall {$config['btsync']['product_executable']} && logger btsync: scheduled closedown";
+            	$cronjob['command'] = "killall {$configuration['product_executable']} && logger btsync: scheduled closedown";
             } else {
             	$cronjob['enable'] = true;
             	$cronjob['uuid'] = uuid();
-            	$cronjob['desc'] = "BitTorrent Sync closedown (@ {$config['btsync']['schedule_closedown']}:00)";
+            	$cronjob['desc'] = "BitTorrent Sync closedown (@ {$configuration['schedule_closedown']}:00)";
             	$cronjob['minute'] = 0;
-            	$cronjob['hour'] = $config['btsync']['schedule_closedown'];
+            	$cronjob['hour'] = $configuration['schedule_closedown'];
             	$cronjob['day'] = true;
             	$cronjob['month'] = true;
             	$cronjob['weekday'] = true;
@@ -257,8 +265,8 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
             	$cronjob['all_months'] = 1;
             	$cronjob['all_weekdays'] = 1;
             	$cronjob['who'] = 'root';
-            	$cronjob['command'] = "killall {$config['btsync']['product_executable']} && logger btsync: scheduled closedown";
-                $config['btsync']['schedule_uuid_closedown'] = $cronjob['uuid'];
+            	$cronjob['command'] = "killall {$configuration['product_executable']} && logger btsync: scheduled closedown";
+                $configuration['schedule_uuid_closedown'] = $cronjob['uuid'];
             }
             if (isset($uuid) && (FALSE !== $cnid)) {
             		$a_cronjob[$cnid] = $cronjob;
@@ -271,13 +279,14 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
             write_config();
         }   // end of enable_schedule
         else {
-            $config['btsync']['enable_schedule'] = isset($_POST['enable_schedule']) ? true : false;
-        	updatenotify_set("cronjob", UPDATENOTIFY_MODE_DIRTY, $config['btsync']['schedule_uuid_startup']);
+            $configuration['enable_schedule'] = isset($_POST['enable_schedule']) ? true : false;
+        	updatenotify_set("cronjob", UPDATENOTIFY_MODE_DIRTY, $configuration['schedule_uuid_startup']);
         	if (is_array($config['cron']) && is_array($config['cron']['job'])) {
 				$index = array_search_ex($data, $config['cron']['job'], "uuid");
 				if (false !== $index) unset($config['cron']['job'][$index]);
 			}
-        	updatenotify_set("cronjob", UPDATENOTIFY_MODE_DIRTY, $config['btsync']['schedule_uuid_closedown']);
+        	write_config();
+        	updatenotify_set("cronjob", UPDATENOTIFY_MODE_DIRTY, $configuration['schedule_uuid_closedown']);
         	if (is_array($config['cron']) && is_array($config['cron']['job'])) {
 				$index = array_search_ex($data, $config['cron']['job'], "uuid");
 				if (false !== $index) unset($config['cron']['job'][$index]);
@@ -308,8 +317,8 @@ function filelist ($contains , $exclude='') {
 	global $config ;
 	// This function creates a list of files that match a certain filename pattern
 	$installFiles = "";
-	if ( is_dir( $config['btsync']['rootfolder'] )) {
-		$raw_list = glob("{$config['btsync']['backupfolder']}{$contains}.{*}", GLOB_BRACE);
+	if ( is_dir( $configuration['rootfolder'] )) {
+		$raw_list = glob("{$configuration['backupfolder']}{$contains}.{*}", GLOB_BRACE);
 		$file_list = array_unique( $raw_list );
 		if ( $exclude ) {
 			foreach ( $exclude as $search_pattern ) {
@@ -330,11 +339,11 @@ function filelist ($contains , $exclude='') {
 function radiolist ($file_list) {
 	global $config ;		// import the global config array
 	$installFiles = "";		// Initialize installFiles as an empty string so we can concatenate in the for loop
-	if (is_dir($config['btsync']['rootfolder'])) {		// check if the folder is a directory, so it doesn't choke
+	if (is_dir($configuration['rootfolder'])) {		// check if the folder is a directory, so it doesn't choke
 		foreach ( $file_list as $file) {
-			$file = str_replace($config['btsync']['rootfolder'] . "/", "", $file);
+			$file = str_replace($configuration['rootfolder'] . "/", "", $file);
 			$installFiles .= "<input type=\"radio\" name=\"installfile\" value=\"$file\"> "
-			. str_replace($config['btsync']['backupfolder'], "", $file)
+			. str_replace($configuration['backupfolder'], "", $file)
 			. "<br/>";
 			} // end of completed folder, filename, suffix creation
 	} // end of verifying rootfolder as valid location
@@ -343,7 +352,7 @@ function radiolist ($file_list) {
 
 function get_process_info() {
     global $config;
-    if (exec("ps acx | grep {$config['btsync']['product_executable']}")) { $state = '<a style=" background-color: #00ff00; ">&nbsp;&nbsp;<b>'.gettext("running").'</b>&nbsp;&nbsp;</a>'; $proc_state = 'running'; }
+    if (exec("ps acx | grep {$configuration['product_executable']}")) { $state = '<a style=" background-color: #00ff00; ">&nbsp;&nbsp;<b>'.gettext("running").'</b>&nbsp;&nbsp;</a>'; $proc_state = 'running'; }
     else { $state = '<a style=" background-color: #ff0000; ">&nbsp;&nbsp;<b>'.gettext("stopped").'</b>&nbsp;&nbsp;</a>'; }
 	return ($state);
 }
@@ -352,6 +361,8 @@ if (is_ajax()) {
 	$procinfo = get_process_info();
 	render_ajax($procinfo);
 }
+
+if (($message = ext_check_version("{$configuration['rootfolder']}version_server.txt", "bittorrent-sync", $configuration['version'], gettext("Extension Maintenance"))) !== false) $savemsg .= $message;
 
 bindtextdomain("nas4free", "/usr/local/share/locale");
 include("fbegin.inc");?>
@@ -409,25 +420,25 @@ function enable_change(enable_change) {
         <?php if (!empty($input_errors)) print_input_errors($input_errors);?>
         <?php if (!empty($savemsg)) print_info_box($savemsg);?>
         <table width="100%" border="0" cellpadding="6" cellspacing="0">
-            <?php html_titleline($config['btsync']['appname']." ".gettext("Update"));?>
+            <?php html_titleline($configuration['appname']." ".gettext("Update"));?>
 			  <tr>
 			    <td class="vncell"><?=gettext("Status");?></td>
                 <td class="vtable"><span name="procinfo" id="procinfo"></span></td>
 			  </tr>
-			<?php html_text("version_current", gettext("Installed version"), $config['btsync']['product_version']);?>
+			<?php html_text("version_current", gettext("Installed version"), $configuration['product_version']);?>
 			<tr>
 				<td valign="top" class="vncell"><?=gettext("Latest version fetched from BitTorrent server");?>
 				</td>
 				<td class="vtable"><?=$pconfig['product_version_new'].gettext(" - push 'fetch' button to check for new version");?>
                     <span class="label">&nbsp;&nbsp;&nbsp;</span>
                     <input id="fetch" name="fetch" type="submit" class="formbtn" value="<?=gettext("Fetch");?>" onClick="return fetch_handler();" />
-                    <?php if (("{$pconfig['product_version_new']}" != "{$config['btsync']['product_version']}") && ("{$pconfig['product_version_new']}" != "n/a")) { ?> 
+                    <?php if (("{$pconfig['product_version_new']}" != "{$configuration['product_version']}") && ("{$pconfig['product_version_new']}" != "n/a")) { ?> 
                         <input id="install_new" name="install_new" type="submit" class="formbtn" value="<?=gettext("Install");?>" onClick="return fetch_handler();" />
                     <?php } ?>
                     <a href='https://www.getsync.com' target='_blank'>&nbsp;&nbsp;&nbsp;-> BitTorrent Sync</a>
 				</td>
 			</tr>
-            <?php html_inputbox("download_url", gettext("Download URL"), $config['btsync']['download_url'], sprintf(gettext("Define a new permanent application download URL or an URL for a one-time download of a previous version.<br />Previous download URL was <b>%s</b>"), $config['btsync']['previous_url']), false, 100);?>
+            <?php html_inputbox("download_url", gettext("Download URL"), $configuration['download_url'], sprintf(gettext("Define a new permanent application download URL or an URL for a one-time download of a previous version.<br />Previous download URL was <b>%s</b>"), $configuration['previous_url']), false, 100);?>
         </table>
         <div id="remarks">
             <?php html_remark("note_url", gettext("Note"), sprintf(gettext("Use 'Save URL' to change the download URL permanently, 'Revert URL' to activate a previously saved URL or 'Get File' to download a previous version - for example <b>http://syncapp.bittorrent.com/1.4.83/btsync_freebsd_x64-1.4.83.tar.gz</b> (after the download push 'Install' to install the newly downloaded file).")));?>
@@ -457,14 +468,14 @@ function enable_change(enable_change) {
         </div>
         <table width="100%" border="0" cellpadding="6" cellspacing="0">
 			<?php html_separator();?>
-        	<?php html_titleline_checkbox("enable_schedule", gettext("Daily schedule"), isset($config['btsync']['enable_schedule']) ? true : false, gettext("Enable"), "enable_change(false)");?>
+        	<?php html_titleline_checkbox("enable_schedule", gettext("Daily schedule"), isset($configuration['enable_schedule']) ? true : false, gettext("Enable"), "enable_change(false)");?>
     		<?php $hours = array(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23); ?>
-            <?php html_combobox("startup", gettext("Startup"), $config['btsync']['schedule_startup'], $hours, gettext("Choose a startup hour for")." ".$config['btsync']['appname'], true);?>
-            <?php html_combobox("closedown", gettext("Closedown"), $config['btsync']['schedule_closedown'], $hours, gettext("Choose a closedown hour for")." ".$config['btsync']['appname'], true);?>
+            <?php html_combobox("startup", gettext("Startup"), $configuration['schedule_startup'], $hours, gettext("Choose a startup hour for")." ".$configuration['appname'], true);?>
+            <?php html_combobox("closedown", gettext("Closedown"), $configuration['schedule_closedown'], $hours, gettext("Choose a closedown hour for")." ".$configuration['appname'], true);?>
 			<?php html_separator();?>
         </table>
         <div id="submit_schedule">
-            <?php if (!isset($config['btsync']['command'])){ $disabled = "disabled"; } else { $disabled = ""; } ?>
+            <?php if (!isset($configuration['command'])){ $disabled = "disabled"; } else { $disabled = ""; } ?>
             <input id="schedule" name="schedule" type="submit" <?=$disabled;?> class="formbtn" value="<?=gettext("Save and Restart");?>" onclick="enable_change(true)" />
         </div>
         <?php 
