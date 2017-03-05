@@ -72,6 +72,7 @@ $loginfo = array(
 
 function log_get_contents($logfile, $type) {
 	global $config;
+    global $configuration;
 
 	$content = array();
 

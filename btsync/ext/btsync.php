@@ -355,12 +355,12 @@ if (is_file($configuration['rootfolder']."sync.conf")) {
     $sync_conf = json_clean_decode($sync_conf,true);
 }
 
-$pconfig['enable'] = isset($configuration['enable']);
+$pconfig['enable'] = $configuration['enable'];
 $pconfig['who'] = !empty($configuration['who']) ? $configuration['who'] : "";
 $pconfig['if'] = !empty($configuration['if']) ? $configuration['if'] : "";
 $pconfig['ipaddr'] = !empty($configuration['ipaddr']) ? $configuration['ipaddr'] : "";
 $pconfig['port'] = !empty($configuration['port']) ? $configuration['port'] : "8888";
-$pconfig['listen_to_all'] = isset($configuration['listen_to_all']) ? true : false;
+$pconfig['listen_to_all'] = $configuration['listen_to_all'];
 $pconfig['device_name'] = !empty($sync_conf['device_name']) ? $sync_conf['device_name'] : "";
 $pconfig['force_https'] = isset($sync_conf['webui']['force_https']) ? $sync_conf['webui']['force_https'] : true;
 $pconfig['ssl_certificate'] = !empty($sync_conf['webui']['ssl_certificate']) ? $sync_conf['webui']['ssl_certificate'] : "";
@@ -416,7 +416,7 @@ if (isset($config['vinterfaces']['lagg']) && is_array($config['vinterfaces']['la
 if (empty($pconfig['if']) && is_array($a_interface)) $pconfig['if'] = key($a_interface);
 
 function get_process_info() {
-    global $config;
+    global $configuration;
     if (exec("ps acx | grep {$configuration['product_executable']}")) { $state = '<a style=" background-color: #00ff00; ">&nbsp;&nbsp;<b>'.gettext("running").'</b>&nbsp;&nbsp;</a>'; }
     else { $state = '<a style=" background-color: #ff0000; ">&nbsp;&nbsp;<b>'.gettext("stopped").'</b>&nbsp;&nbsp;</a>'; }
 	return ($state);
@@ -427,7 +427,13 @@ if (is_ajax()) {
 	render_ajax($procinfo);
 }
 
-if (($message = ext_check_version("{$configuration['rootfolder']}version_server.txt", "bittorrent-sync", $configuration['version'], gettext("Extension Maintenance"))) !== false) $savemsg .= $message;
+if (!is_file("{$configuration['rootfolder']}version_server.txt") || filemtime("{$configuration['rootfolder']}version_server.txt") < time() - 86400) {	// test if file exists or is older than 24 hours
+	$return_val = mwexec("fetch -o {$configuration['rootfolder']}version_server.txt https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/btsync/version.txt", false);
+	if ($return_val == 0) {
+	    $server_version = exec("cat {$configuration['rootfolder']}version_server.txt");
+	    if ($server_version != $current_version) $savemsg .= sprintf(gettext("New extension version %s available, push '%s' button to install the new version!"), $server_version, gettext("Extension Maintenance"));
+	}
+}
 
 bindtextdomain("nas4free", "/usr/local/share/locale");
 include("fbegin.inc");?>  

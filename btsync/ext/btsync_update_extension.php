@@ -79,6 +79,7 @@ if (isset($_POST['ext_remove']) && $_POST['ext_remove']) {
 	killbyname($configuration['product_executable']);
 // remove start/stop commands
 	ext_remove_rc_commands("btsync");
+	ext_remove_rc_commands($configuration['product_executable']);
 // unlink created  links
 	if (is_dir ("/usr/local/www/ext/btsync")) {
 	foreach ( glob( "{$configuration['rootfolder']}ext/*.php" ) as $file ) {

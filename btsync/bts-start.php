@@ -61,7 +61,10 @@ $return_val += mwexec("ln -sfw {$rootfolder}ext/btsync_update_extension.php /usr
 if ($return_val != 0) mwexec("logger btsync-extension: error during startup, link creation failed with return value = {$return_val}");
 else if ($configuration['enable']) {
 	    mwexec("killall {$configuration['product_executable']}");
-	    if ($configuration['enable_schedule'] && $configuration['schedule_prohibit'] && ($argc == 1)) mwexec("logger btsync-extension: {$configuration['product_executable']} start prohibited due to scheduler settings!");
+		$check_hour = date("G");	    
+	    if ($configuration['enable_schedule'] && $configuration['schedule_prohibit'] && (($check_hour < $configuration['schedule_startup']) || ($check_hour >= $configuration['schedule_closedown']))) { 
+			mwexec("logger btsync-extension: {$configuration['product_executable']} start prohibited due to scheduler settings!"); 
+		}
 	    else {
 		    mwexec("logger btsync-extension: enabled, start {$configuration['product_executable']} ...");
 		    exec($configuration['command']);

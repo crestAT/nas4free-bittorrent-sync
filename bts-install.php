@@ -29,7 +29,7 @@
     of the authors and should not be interpreted as representing official policies,
     either expressed or implied, of the FreeBSD Project.
 */
-$version = "v0.7.2-beta1";							// extension version
+$version = "v0.7.2";							// extension version
 $appname = "BitTorrent Sync";
 $config_name = "btsync";
 $version_striped = str_replace(".", "", $version);
@@ -120,6 +120,7 @@ else {
 }
 
 ext_remove_rc_commands($config_name);
+ext_remove_rc_commands($configuration['product_executable']);
 $configuration['rc_uuid_start'] = $configuration['postinit'];
 $configuration['rc_uuid_stop'] = $configuration['shutdown'];
 ext_create_rc_commands($appname, $configuration['rc_uuid_start'], $configuration['rc_uuid_stop']);

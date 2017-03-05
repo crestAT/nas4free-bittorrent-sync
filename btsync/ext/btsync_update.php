@@ -45,14 +45,15 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') {
     $size_server = exec("fetch -s {$configuration['download_url']}", $size_server, $return_val);
     if ( $return_val == 0) {
         if ($size_server != $configuration['size']) {
-        $savemsg = sprintf(gettext("New %s version available - push '%s' button to download the new version!"), $configuration['appname'], gettext("Fetch")); }
+        $savemsg = sprintf(gettext("New %s version available - push '%s' button to download the new version!"), "Resilio Sync", gettext("Fetch"))."<br />"; }
     }
 }
 
 $pconfig['product_version_new'] = !empty($configuration['product_version_new']) ? $configuration['product_version_new'] : "n/a";
 
 function fetch_file($file_url) {
-    global $config;
+    global $config_file;
+    global $configuration;
     global $input_errors;
     global $savemsg;
     global $pconfig;
@@ -66,7 +67,10 @@ function fetch_file($file_url) {
     $pconfig['product_version_new'] = exec ("{$configuration['updatefolder']}{$configuration['product_executable']} --help | awk '/Sync/ {print $3}'");
         if ($pconfig['product_version_new'] == '') { $pconfig['product_version_new'] = 'n/a'; $input_errors[] = gettext("Could not retrieve new version!"); }
         else {
-            if ("{$pconfig['product_version_new']}" == "{$configuration['product_version']}") { $savemsg = gettext("No new version available!"); }
+            if ("{$pconfig['product_version_new']}" == "{$configuration['product_version']}") { 
+				$savemsg = gettext("No new version available!"); 
+				$configuration['size'] = $configuration['size_new'];
+			}
             else {
                 $savemsg = sprintf(gettext("New version %s available, push '"), $pconfig['product_version_new']).gettext('Install').gettext("' button to install the new version!");
             }
@@ -177,10 +181,11 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
     if (isset($_POST['enable_schedule']) && ($_POST['startup'] == $_POST['closedown'])) { $input_errors[] = gettext("Startup and closedown hour must be different!"); }
     else {
         if (isset($_POST['enable_schedule'])) {
-            $configuration['enable_schedule'] = isset($_POST['enable_schedule']) ? true : false;
+            $configuration['enable_schedule'] = isset($_POST['enable_schedule']);
             $configuration['schedule_startup'] = $_POST['startup'];
             $configuration['schedule_closedown'] = $_POST['closedown'];
-    
+            $configuration['schedule_prohibit'] = isset($_POST['prohibit']);
+
             $cronjob = array();
 			if (!is_array($config['cron'])) $config['cron'] = [];
             $a_cronjob = &$config['cron']['job'];
@@ -304,6 +309,7 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
 		if ($retval == 0) {
 			updatenotify_delete("cronjob");
 		}
+		$savemsg = get_std_save_message(ext_save_config($config_file, $configuration));
     }   // end of schedule change
 }
 
@@ -314,7 +320,7 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
 // Description:		This function creates an html code block with the files listed on the right
 //					and radio buttons next to each on the left.
 function filelist ($contains , $exclude='') {
-	global $config ;
+    global $configuration;
 	// This function creates a list of files that match a certain filename pattern
 	$installFiles = "";
 	if ( is_dir( $configuration['rootfolder'] )) {
@@ -337,7 +343,7 @@ function filelist ($contains , $exclude='') {
 // Description:		This function creates an html code block with the files listed on the right
 //					and radio buttons next to each on the left.
 function radiolist ($file_list) {
-	global $config ;		// import the global config array
+    global $configuration;
 	$installFiles = "";		// Initialize installFiles as an empty string so we can concatenate in the for loop
 	if (is_dir($configuration['rootfolder'])) {		// check if the folder is a directory, so it doesn't choke
 		foreach ( $file_list as $file) {
@@ -351,7 +357,7 @@ function radiolist ($file_list) {
 }
 
 function get_process_info() {
-    global $config;
+    global $configuration;
     if (exec("ps acx | grep {$configuration['product_executable']}")) { $state = '<a style=" background-color: #00ff00; ">&nbsp;&nbsp;<b>'.gettext("running").'</b>&nbsp;&nbsp;</a>'; $proc_state = 'running'; }
     else { $state = '<a style=" background-color: #ff0000; ">&nbsp;&nbsp;<b>'.gettext("stopped").'</b>&nbsp;&nbsp;</a>'; }
 	return ($state);
@@ -362,7 +368,13 @@ if (is_ajax()) {
 	render_ajax($procinfo);
 }
 
-if (($message = ext_check_version("{$configuration['rootfolder']}version_server.txt", "bittorrent-sync", $configuration['version'], gettext("Extension Maintenance"))) !== false) $savemsg .= $message;
+if (!is_file("{$configuration['rootfolder']}version_server.txt") || filemtime("{$configuration['rootfolder']}version_server.txt") < time() - 86400) {	// test if file exists or is older than 24 hours
+	$return_val = mwexec("fetch -o {$configuration['rootfolder']}version_server.txt https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/btsync/version.txt", false);
+	if ($return_val == 0) {
+	    $server_version = exec("cat {$configuration['rootfolder']}version_server.txt");
+	    if ($server_version != $current_version) $savemsg .= sprintf(gettext("New extension version %s available, push '%s' button to install the new version!"), $server_version, gettext("Extension Maintenance"));
+	}
+}
 
 bindtextdomain("nas4free", "/usr/local/share/locale");
 include("fbegin.inc");?>
@@ -396,6 +408,7 @@ function enable_change(enable_change) {
 	var endis = !(document.iform.enable_schedule.checked || enable_change);
 	document.iform.startup.disabled = endis;
 	document.iform.closedown.disabled = endis;
+	document.iform.prohibit.disabled = endis;
 }
 
 //-->
@@ -435,7 +448,7 @@ function enable_change(enable_change) {
                     <?php if (("{$pconfig['product_version_new']}" != "{$configuration['product_version']}") && ("{$pconfig['product_version_new']}" != "n/a")) { ?> 
                         <input id="install_new" name="install_new" type="submit" class="formbtn" value="<?=gettext("Install");?>" onClick="return fetch_handler();" />
                     <?php } ?>
-                    <a href='https://www.getsync.com' target='_blank'>&nbsp;&nbsp;&nbsp;-> BitTorrent Sync</a>
+                    <a href='https://www.getsync.com' target='_blank'>&nbsp;&nbsp;&nbsp;-> Resilio Sync</a>
 				</td>
 			</tr>
             <?php html_inputbox("download_url", gettext("Download URL"), $configuration['download_url'], sprintf(gettext("Define a new permanent application download URL or an URL for a one-time download of a previous version.<br />Previous download URL was <b>%s</b>"), $configuration['previous_url']), false, 100);?>
@@ -452,7 +465,7 @@ function enable_change(enable_change) {
 			<?php html_separator();?>
             <?php html_titleline(gettext("Backup"));?>
             <?php
-                $file_list = filelist("btsync-*");
+                $file_list = filelist("{$configuration['product_executable']}-*");
                 $backups = radiolist($file_list);
                 if ( $backups ) { $backup_list = $backups; }
                 else { $backup_list = gettext("No backup found!"); }
@@ -468,10 +481,11 @@ function enable_change(enable_change) {
         </div>
         <table width="100%" border="0" cellpadding="6" cellspacing="0">
 			<?php html_separator();?>
-        	<?php html_titleline_checkbox("enable_schedule", gettext("Daily schedule"), isset($configuration['enable_schedule']) ? true : false, gettext("Enable"), "enable_change(false)");?>
+        	<?php html_titleline_checkbox("enable_schedule", gettext("Daily schedule"), $configuration['enable_schedule'], gettext("Enable"), "enable_change(false)");?>
     		<?php $hours = array(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23); ?>
             <?php html_combobox("startup", gettext("Startup"), $configuration['schedule_startup'], $hours, gettext("Choose a startup hour for")." ".$configuration['appname'], true);?>
             <?php html_combobox("closedown", gettext("Closedown"), $configuration['schedule_closedown'], $hours, gettext("Choose a closedown hour for")." ".$configuration['appname'], true);?>
+            <?php html_checkbox("prohibit", gettext("System Startup"), $configuration['schedule_prohibit'], sprintf(gettext("Prohibit %s start on system startup if scheduling is activated and the server startup time is outside the range of the defined startup and closedown hour."), "Resilio Sync"), false);?>
 			<?php html_separator();?>
         </table>
         <div id="submit_schedule">
