@@ -2,7 +2,7 @@
 /* 
     btsync.php
 
-    Copyright (c) 2013 - 2016 Andreas Schmidhuber
+    Copyright (c) 2013 - 2017 Andreas Schmidhuber <info@a3s.at>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -32,18 +32,21 @@
 require("auth.inc");
 require("guiconfig.inc");
 
+bindtextdomain("nas4free", "/usr/local/share/locale-bts");
+
+$config_file = "ext/btsync/btsync.conf";
+require_once("ext/btsync/extension-lib.inc");
+if (($configuration = ext_load_config($config_file)) === false) $input_errors[] = sprintf(gettext("Configuration file %s not found!"), "btsync.conf");
+if (!isset($configuration['rootfolder']) && !is_dir($configuration['rootfolder'] )) $input_errors[] = gettext("Extension installed with fault");
+
 // Dummy standard message gettext calls for xgettext retrieval!!!
 $dummy = gettext("The changes have been applied successfully.");
 $dummy = gettext("The configuration has been changed.<br />You must apply the changes in order for them to take effect.");
 $dummy = gettext("The following input errors were detected");
 
-bindtextdomain("nas4free", "/usr/local/share/locale-bts");
-$pgtitle = array(gettext("Extensions"), $config['btsync']['appname']." ".$config['btsync']['version']);
+$pgtitle = array(gettext("Extensions"), $configuration['appname']." ".$configuration['version']);
 
-if ( !isset( $config['btsync']['rootfolder']) && !is_dir( $config['btsync']['rootfolder'] )) {
-	$input_errors[] = gettext("Extension installed with fault!");
-} 
-if (!isset($config['btsync']) || !is_array($config['btsync'])) $config['btsync'] = array();
+if (!isset($configuration) || !is_array($configuration)) $configuration = array();
 
 /** 
  * Clean comments of json content and decode it with json_decode(). 
@@ -112,18 +115,17 @@ if (isset($_POST['save']) && $_POST['save']) {
     if (!empty($_POST['storage_path'])) { change_perms($_POST['storage_path']); }
 	if (empty($input_errors)) {
 		if (isset($_POST['enable'])) {
-            $config['btsync']['enable'] = isset($_POST['enable']) ? true : false;
-            $config['btsync']['who'] = $_POST['who'];
-            $config['btsync']['listen_to_all'] = isset($_POST['listen_to_all']) ? true : false;
-            $config['btsync']['if'] = $_POST['if'];
-            $config['btsync']['ipaddr'] = get_ipaddr($_POST['if']);
-            $config['btsync']['port'] = $_POST['port'];
-            $config['btsync']['storage_path'] = !empty($_POST['storage_path']) ? $_POST['storage_path'] : $config['btsync']['rootfolder'].".sync/";
-            $config['btsync']['storage_path'] = rtrim($config['btsync']['storage_path'],'/')."/";                 // ensure to have a trailing slash
-    		$savemsg = get_std_save_message(write_config());
+            $configuration['enable'] = isset($_POST['enable']) ? true : false;
+            $configuration['who'] = $_POST['who'];
+            $configuration['listen_to_all'] = isset($_POST['listen_to_all']) ? true : false;
+            $configuration['if'] = $_POST['if'];
+            $configuration['ipaddr'] = get_ipaddr($_POST['if']);
+            $configuration['port'] = $_POST['port'];
+            $configuration['storage_path'] = !empty($_POST['storage_path']) ? $_POST['storage_path'] : $configuration['rootfolder'].".sync/";
+            $configuration['storage_path'] = rtrim($configuration['storage_path'],'/')."/";                 // ensure to have a trailing slash
     
-            if (is_file($config['btsync']['rootfolder']."sync.conf")) {
-                $sync_conf = file_get_contents($config['btsync']['rootfolder']."sync.conf");
+            if (is_file($configuration['rootfolder']."sync.conf")) {
+                $sync_conf = file_get_contents($configuration['rootfolder']."sync.conf");
                 $sync_conf = utf8_encode($sync_conf);
                 $sync_conf = json_clean_decode($sync_conf,true);
             }
@@ -137,9 +139,9 @@ if (isset($_POST['save']) && $_POST['save']) {
                 if ($sync_conf['webui']['password'] == "password") unset($sync_conf['webui']['password']);
             }
             $sync_conf['device_name'] = !empty($_POST['device_name']) ? $_POST['device_name'] : "";
-            $sync_conf['storage_path'] = !empty($_POST['storage_path']) ? $_POST['storage_path'] : $config['btsync']['rootfolder'].".sync/";
+            $sync_conf['storage_path'] = !empty($_POST['storage_path']) ? $_POST['storage_path'] : $configuration['rootfolder'].".sync/";
             $sync_conf['pid_file'] = !empty($_POST['pid_file']) ? $_POST['pid_file'] : $sync_conf['storage_path']."sync.pid";
-            $sync_conf['webui']['listen'] = isset($_POST['listen_to_all']) ? '0.0.0.0:'.$config['btsync']['port'] : $config['btsync']['ipaddr'].':'.$config['btsync']['port'];
+            $sync_conf['webui']['listen'] = isset($_POST['listen_to_all']) ? '0.0.0.0:'.$configuration['port'] : $configuration['ipaddr'].':'.$configuration['port'];
             $sync_conf['webui']['force_https'] = isset($_POST['force_https']) ? true : false;
             $sync_conf['webui']['ssl_certificate'] = !empty($_POST['ssl_certificate']) ? $_POST['ssl_certificate'] : "";
             $sync_conf['webui']['ssl_private_key'] = !empty($_POST['ssl_private_key']) ? $_POST['ssl_private_key'] : "";
@@ -151,7 +153,6 @@ if (isset($_POST['save']) && $_POST['save']) {
             $sync_conf['disk_low_priority'] = isset($_POST['disk_low_priority']) ? true : false;
             $sync_conf['listening_port'] = (is_numeric($_POST['listening_port']) ? (int)$_POST['listening_port'] : 0);
             $sync_conf['external_port'] = (is_numeric($_POST['external_port']) ? (int)$_POST['external_port'] : 0);
-            $sync_conf['folder_defaults.delete_to_trash'] = isset($_POST['folder_defaults_delete_to_trash']) ? true : false;
             $sync_conf['folder_defaults.known_hosts'] = !empty($_POST['folder_defaults_known_hosts']) ? str_replace(" ", "", rtrim($_POST['folder_defaults_known_hosts'],',')) : "";
             $sync_conf['folder_defaults.use_dht'] = isset($_POST['folder_defaults_use_dht']) ? true : false;
             $sync_conf['folder_defaults.use_lan_broadcast'] = isset($_POST['folder_defaults_use_lan_broadcast']) ? true : false;
@@ -171,29 +172,29 @@ if (isset($_POST['save']) && $_POST['save']) {
             $sync_conf['sync_max_time_diff'] = (is_numeric($_POST['sync_max_time_diff']) ? (int)$_POST['sync_max_time_diff'] : 600);
             $sync_conf['sync_trash_ttl'] = (is_numeric($_POST['sync_trash_ttl']) ? (int)$_POST['sync_trash_ttl'] : 30);
     
-    		$config['btsync']['command'] = "su {$config['btsync']['who']} -c '{$config['btsync']['rootfolder']}{$config['btsync']['product_executable']} --config {$config['btsync']['rootfolder']}sync.conf'";
-    		$savemsg = get_std_save_message(write_config());
+    		$configuration['command'] = "su {$configuration['who']} -c '{$configuration['rootfolder']}{$configuration['product_executable']} --config {$configuration['rootfolder']}sync.conf'";
     
-            file_put_contents($config['btsync']['rootfolder']."sync.conf", json_encode($sync_conf, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ));
+            file_put_contents($configuration['rootfolder']."sync.conf", json_encode($sync_conf, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ));
             if (json_last_error() > 0) { $input_errors[] = gettext('Error during encoding/writing sync.conf file with error number: ').json_last_error(); };
     
-            killbyname($config['btsync']['product_executable']);
+            killbyname($configuration['product_executable']);
             $return_val = 0;
-            while( $return_val == 0 ) { sleep(1); exec("ps acx | grep {$config['btsync']['product_executable']}", $output, $return_val); }
+            while( $return_val == 0 ) { sleep(1); exec("ps acx | grep {$configuration['product_executable']}", $output, $return_val); }
             unset ($output);
-            mwexec("chown -R {$config['btsync']['who']} {$config['btsync']['rootfolder']}", true);
-            exec($config['btsync']['command'], $output, $return_val);
+            mwexec("chown -R {$configuration['who']} {$configuration['rootfolder']}", true);
+            exec($configuration['command'], $output, $return_val);
             if ($return_val != 0) { $input_errors = $output; }
-            if (isset($config['btsync']['enable_schedule'])) {  // if cronjobs exists -> activate
+            if (isset($configuration['enable_schedule'])) {  // if cronjobs exists -> activate
                 $cronjob = array();
+				if (!is_array($config['cron'])) $config['cron'] = [];
                 $a_cronjob = &$config['cron']['job'];
-                $uuid = isset($config['btsync']['schedule_uuid_startup']) ? $config['btsync']['schedule_uuid_startup'] : false;
+                $uuid = isset($configuration['schedule_uuid_startup']) ? $configuration['schedule_uuid_startup'] : false;
                 if (isset($uuid) && (FALSE !== ($cnid = array_search_ex($uuid, $a_cronjob, "uuid")))) {
                 	$cronjob['enable'] = true;
                 	$cronjob['uuid'] = $a_cronjob[$cnid]['uuid'];
                 	$cronjob['desc'] = $a_cronjob[$cnid]['desc'];
                 	$cronjob['minute'] = $a_cronjob[$cnid]['minute'];
-                	$cronjob['hour'] = $config['btsync']['schedule_startup'];
+                	$cronjob['hour'] = $configuration['schedule_startup'];
                 	$cronjob['day'] = $a_cronjob[$cnid]['day'];
                 	$cronjob['month'] = $a_cronjob[$cnid]['month'];
                 	$cronjob['weekday'] = $a_cronjob[$cnid]['weekday'];
@@ -217,14 +218,15 @@ if (isset($_POST['save']) && $_POST['save']) {
 
                 unset ($cronjob);
                 $cronjob = array();
+				if (!is_array($config['cron'])) $config['cron'] = [];
                 $a_cronjob = &$config['cron']['job'];
-                $uuid = isset($config['btsync']['schedule_uuid_closedown']) ? $config['btsync']['schedule_uuid_closedown'] : false;
+                $uuid = isset($configuration['schedule_uuid_closedown']) ? $configuration['schedule_uuid_closedown'] : false;
                 if (isset($uuid) && (FALSE !== ($cnid = array_search_ex($uuid, $a_cronjob, "uuid")))) {
                 	$cronjob['enable'] = true;
                 	$cronjob['uuid'] = $a_cronjob[$cnid]['uuid'];
                 	$cronjob['desc'] = $a_cronjob[$cnid]['desc'];
                 	$cronjob['minute'] = $a_cronjob[$cnid]['minute'];
-                	$cronjob['hour'] = $config['btsync']['schedule_closedown'];
+                	$cronjob['hour'] = $configuration['schedule_closedown'];
                 	$cronjob['day'] = $a_cronjob[$cnid]['day'];
                 	$cronjob['month'] = $a_cronjob[$cnid]['month'];
                 	$cronjob['weekday'] = $a_cronjob[$cnid]['weekday'];
@@ -261,20 +263,20 @@ if (isset($_POST['save']) && $_POST['save']) {
             }   // end of activate cronjobs
         }   // end of enable extension
 		else { 
-            killbyname($config['btsync']['product_executable']);
-			$savemsg = $savemsg." ".$config['btsync']['appname'].gettext(" is now disabled!"); 
-            $config['btsync']['enable'] = isset($_POST['enable']) ? true : false;
-            write_config();
-            if (isset($config['btsync']['enable_schedule'])) {  // if cronjobs exists -> deactivate
+            killbyname($configuration['product_executable']);
+			$savemsg = $savemsg." ".$configuration['appname'].gettext(" is now disabled!"); 
+            $configuration['enable'] = isset($_POST['enable']) ? true : false;
+            if (isset($configuration['enable_schedule'])) {  // if cronjobs exists -> deactivate
                 $cronjob = array();
+				if (!is_array($config['cron'])) $config['cron'] = [];
                 $a_cronjob = &$config['cron']['job'];
-                $uuid = isset($config['btsync']['schedule_uuid_startup']) ? $config['btsync']['schedule_uuid_startup'] : false;
+                $uuid = isset($configuration['schedule_uuid_startup']) ? $configuration['schedule_uuid_startup'] : false;
                 if (isset($uuid) && (FALSE !== ($cnid = array_search_ex($uuid, $a_cronjob, "uuid")))) {
                 	$cronjob['enable'] = false;
                 	$cronjob['uuid'] = $a_cronjob[$cnid]['uuid'];
                 	$cronjob['desc'] = $a_cronjob[$cnid]['desc'];
                 	$cronjob['minute'] = $a_cronjob[$cnid]['minute'];
-                	$cronjob['hour'] = $config['btsync']['schedule_startup'];
+                	$cronjob['hour'] = $configuration['schedule_startup'];
                 	$cronjob['day'] = $a_cronjob[$cnid]['day'];
                 	$cronjob['month'] = $a_cronjob[$cnid]['month'];
                 	$cronjob['weekday'] = $a_cronjob[$cnid]['weekday'];
@@ -298,14 +300,15 @@ if (isset($_POST['save']) && $_POST['save']) {
     
                 unset ($cronjob);
                 $cronjob = array();
+				if (!is_array($config['cron'])) $config['cron'] = [];
                 $a_cronjob = &$config['cron']['job'];
-                $uuid = isset($config['btsync']['schedule_uuid_closedown']) ? $config['btsync']['schedule_uuid_closedown'] : false;
+                $uuid = isset($configuration['schedule_uuid_closedown']) ? $configuration['schedule_uuid_closedown'] : false;
                 if (isset($uuid) && (FALSE !== ($cnid = array_search_ex($uuid, $a_cronjob, "uuid")))) {
                 	$cronjob['enable'] = false;
                 	$cronjob['uuid'] = $a_cronjob[$cnid]['uuid'];
                 	$cronjob['desc'] = $a_cronjob[$cnid]['desc'];
                 	$cronjob['minute'] = $a_cronjob[$cnid]['minute'];
-                	$cronjob['hour'] = $config['btsync']['schedule_closedown'];
+                	$cronjob['hour'] = $configuration['schedule_closedown'];
                 	$cronjob['day'] = $a_cronjob[$cnid]['day'];
                 	$cronjob['month'] = $a_cronjob[$cnid]['month'];
                 	$cronjob['weekday'] = $a_cronjob[$cnid]['weekday'];
@@ -341,21 +344,22 @@ if (isset($_POST['save']) && $_POST['save']) {
         		}
             }   // end of deactivate cronjobs
         }   // end of disable extension
+		$savemsg = get_std_save_message(ext_save_config($config_file, $configuration));
     }   // end of empty input_errors
 }
 
-if (is_file($config['btsync']['rootfolder']."sync.conf")) {
-    $sync_conf = file_get_contents($config['btsync']['rootfolder']."sync.conf");
+if (is_file($configuration['rootfolder']."sync.conf")) {
+    $sync_conf = file_get_contents($configuration['rootfolder']."sync.conf");
     $sync_conf = utf8_encode($sync_conf);
     $sync_conf = json_clean_decode($sync_conf,true);
 }
 
-$pconfig['enable'] = isset($config['btsync']['enable']);
-$pconfig['who'] = !empty($config['btsync']['who']) ? $config['btsync']['who'] : "";
-$pconfig['if'] = !empty($config['btsync']['if']) ? $config['btsync']['if'] : "";
-$pconfig['ipaddr'] = !empty($config['btsync']['ipaddr']) ? $config['btsync']['ipaddr'] : "";
-$pconfig['port'] = !empty($config['btsync']['port']) ? $config['btsync']['port'] : "8888";
-$pconfig['listen_to_all'] = isset($config['btsync']['listen_to_all']) ? true : false;
+$pconfig['enable'] = $configuration['enable'];
+$pconfig['who'] = !empty($configuration['who']) ? $configuration['who'] : "";
+$pconfig['if'] = !empty($configuration['if']) ? $configuration['if'] : "";
+$pconfig['ipaddr'] = !empty($configuration['ipaddr']) ? $configuration['ipaddr'] : "";
+$pconfig['port'] = !empty($configuration['port']) ? $configuration['port'] : "8888";
+$pconfig['listen_to_all'] = $configuration['listen_to_all'];
 $pconfig['device_name'] = !empty($sync_conf['device_name']) ? $sync_conf['device_name'] : "";
 $pconfig['force_https'] = isset($sync_conf['webui']['force_https']) ? $sync_conf['webui']['force_https'] : true;
 $pconfig['ssl_certificate'] = !empty($sync_conf['webui']['ssl_certificate']) ? $sync_conf['webui']['ssl_certificate'] : "";
@@ -366,13 +370,17 @@ if (!empty($sync_conf['webui']['directory_root'])) {					// old btsync parameter
 }
 $pconfig['directory_root'] = !empty($sync_conf['directory_root']) ? $sync_conf['directory_root'] : "/mnt/";
 $pconfig['dir_whitelist'] = !empty($sync_conf['webui']['dir_whitelist']) ? implode(",", $sync_conf['webui']['dir_whitelist']) : "";
-$pconfig['storage_path'] = !empty($sync_conf['storage_path']) ? $sync_conf['storage_path'] : $config['btsync']['rootfolder'].".sync/";
+$pconfig['storage_path'] = !empty($sync_conf['storage_path']) ? $sync_conf['storage_path'] : $configuration['rootfolder'].".sync/";
 $pconfig['pid_file'] = !empty($sync_conf['pid_file']) ? $sync_conf['pid_file'] : $pconfig['storage_path']."sync.pid";
 $pconfig['config_refresh_interval'] = !empty($sync_conf['config_refresh_interval']) ? $sync_conf['config_refresh_interval'] : 3600;
 $pconfig['disk_low_priority'] = isset($sync_conf['disk_low_priority']) ? $sync_conf['disk_low_priority'] : true;
 $pconfig['listening_port'] = !empty($sync_conf['listening_port']) ? $sync_conf['listening_port'] : 0;
 $pconfig['external_port'] = !empty($sync_conf['external_port']) ? $sync_conf['external_port'] : 0;
-$pconfig['folder_defaults_delete_to_trash'] = isset($sync_conf['folder_defaults.delete_to_trash']) ? $sync_conf['folder_defaults.delete_to_trash'] : true;
+if (isset($sync_conf['folder_defaults.delete_to_trash'])) {				// depreciated in rslsync 2.5.2  
+	unset ($sync_conf['folder_defaults.delete_to_trash']); 	
+    file_put_contents($configuration['rootfolder']."sync.conf", json_encode($sync_conf, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ));
+    if (json_last_error() > 0) { $input_errors[] = gettext('Error during encoding/writing sync.conf file with error number: ').json_last_error(); };
+}
 $pconfig['folder_defaults_known_hosts'] = !empty($sync_conf['folder_defaults.known_hosts']) ? $sync_conf['folder_defaults.known_hosts'] : "";
 $pconfig['folder_defaults_use_dht'] = isset($sync_conf['folder_defaults.use_dht']) ? $sync_conf['folder_defaults.use_dht'] : false;
 $pconfig['folder_defaults_use_lan_broadcast'] = isset($sync_conf['folder_defaults.use_lan_broadcast']) ? $sync_conf['folder_defaults.use_lan_broadcast'] : true;
@@ -411,8 +419,8 @@ if (isset($config['vinterfaces']['lagg']) && is_array($config['vinterfaces']['la
 if (empty($pconfig['if']) && is_array($a_interface)) $pconfig['if'] = key($a_interface);
 
 function get_process_info() {
-    global $config;
-    if (exec("ps acx | grep {$config['btsync']['product_executable']}")) { $state = '<a style=" background-color: #00ff00; ">&nbsp;&nbsp;<b>'.gettext("running").'</b>&nbsp;&nbsp;</a>'; }
+    global $configuration;
+    if (exec("ps acx | grep {$configuration['product_executable']}")) { $state = '<a style=" background-color: #00ff00; ">&nbsp;&nbsp;<b>'.gettext("running").'</b>&nbsp;&nbsp;</a>'; }
     else { $state = '<a style=" background-color: #ff0000; ">&nbsp;&nbsp;<b>'.gettext("stopped").'</b>&nbsp;&nbsp;</a>'; }
 	return ($state);
 }
@@ -420,6 +428,14 @@ function get_process_info() {
 if (is_ajax()) {
 	$procinfo = get_process_info();
 	render_ajax($procinfo);
+}
+
+if (!is_file("{$configuration['rootfolder']}version_server.txt") || filemtime("{$configuration['rootfolder']}version_server.txt") < time() - 86400) {	// test if file exists or is older than 24 hours
+	$return_val = mwexec("fetch -o {$configuration['rootfolder']}version_server.txt https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/btsync/version.txt", false);
+	if ($return_val == 0) {
+	    $server_version = exec("cat {$configuration['rootfolder']}version_server.txt");
+	    if ($server_version != $configuration['version']) $savemsg .= sprintf(gettext("New extension version %s available, push '%s' button to install the new version!"), $server_version, gettext("Extension Maintenance"));
+	}
 }
 
 bindtextdomain("nas4free", "/usr/local/share/locale");
@@ -458,7 +474,6 @@ function enable_change(enable_change) {
 	document.iform.disk_low_priority.disabled = endis;
     document.iform.listening_port.disabled = endis;
     document.iform.external_port.disabled = endis;
-    document.iform.folder_defaults_delete_to_trash.disabled = endis;
     document.iform.folder_defaults_known_hosts.disabled = endis;
     document.iform.folder_defaults_use_dht.disabled = endis;
     document.iform.folder_defaults_use_lan_broadcast.disabled = endis;
@@ -494,7 +509,6 @@ function as_change() {
     		showElementById('disk_low_priority_tr','hide');
     		showElementById('listening_port_tr','hide');
     		showElementById('external_port_tr','hide');
-    		showElementById('folder_defaults_delete_to_trash_tr','hide');
     		showElementById('folder_defaults_known_hosts_tr','hide');
     		showElementById('folder_defaults_use_dht_tr','hide');
     		showElementById('folder_defaults_use_lan_broadcast_tr','hide');
@@ -527,7 +541,6 @@ function as_change() {
     		showElementById('disk_low_priority_tr','show');
     		showElementById('listening_port_tr','show');
     		showElementById('external_port_tr','show');
-    		showElementById('folder_defaults_delete_to_trash_tr','show');
     		showElementById('folder_defaults_known_hosts_tr','show');
     		showElementById('folder_defaults_use_dht_tr','show');
     		showElementById('folder_defaults_use_lan_broadcast_tr','show');
@@ -570,10 +583,10 @@ function as_change() {
         <?php if (!empty($input_errors)) print_input_errors($input_errors);?>
         <?php if (!empty($savemsg)) print_info_box($savemsg);?>
         <table width="100%" border="0" cellpadding="6" cellspacing="0">
-			<?php html_titleline($config['btsync']['appname']." ".gettext("Information"));?>
-            <?php html_text("installation_directory", gettext("Installation directory"), sprintf(gettext("The extension is installed in %s."), $config['btsync']['rootfolder']));?>
-			<?php html_text("version", gettext("Version"), $config['btsync']['product_version']);?>
-			<?php html_text("architecture", gettext("Architecture"), $config['btsync']['architecture']);?>		
+			<?php html_titleline($configuration['appname']." ".gettext("Information"));?>
+            <?php html_text("installation_directory", gettext("Installation directory"), sprintf(gettext("The extension is installed in %s."), $configuration['rootfolder']));?>
+			<?php html_text("version", gettext("Version"), $configuration['product_version']);?>
+			<?php html_text("architecture", gettext("Architecture"), $configuration['architecture']);?>		
             <tr>
                 <td class="vncell"><?=gettext("Status");?></td>
                 <td class="vtable"><span name="procinfo" id="procinfo"></span></td>
@@ -586,7 +599,7 @@ function as_change() {
                 html_text("url", gettext("WebGUI")." ".gettext("URL"), $text);
             ?>
 			<?php html_separator();?>
-        	<?php html_titleline_checkbox("enable", $config['btsync']['appname'], !empty($pconfig['enable']) ? true : false, gettext("Enable"), "enable_change(false)");?>
+        	<?php html_titleline_checkbox("enable", $configuration['appname'], !empty($pconfig['enable']) ? true : false, gettext("Enable"), "enable_change(false)");?>
             <?php html_inputbox("device_name", gettext("Device name"), $pconfig['device_name'], gettext("Name of this device. Default is the hostname."), true, 15);?>
 			<tr>
 				<td valign="top" class="vncellreq"><?=gettext("Interface selection");?></td>
@@ -619,7 +632,6 @@ function as_change() {
             <?php html_checkbox("disk_low_priority", "disk_low_priority", $pconfig['disk_low_priority'], gettext("Sets priority for the file operations on disc."), gettext("Default is enabled."), false);?>
             <?php html_inputbox("listening_port", "listening_port", $pconfig['listening_port'], sprintf(gettext("Allows you to configure the port BitTorrent Sync will be using for incoming and outgoing UDP packets and incoming TCP connections. Default is %d (random value)."), 0), false, 5);?>
             <?php html_inputbox("external_port", "external_port", $pconfig['external_port'], sprintf(gettext("External (i.e. relative to NAT) port value. Default is %d (not set)."), 0), false, 5);?>
-            <?php html_checkbox("folder_defaults_delete_to_trash", "folder_defaults.delete_to_trash", $pconfig['folder_defaults_delete_to_trash'], gettext("Default setting for folder preference 'Store deleted files in folder archive'."), gettext("Default is enabled."), false);?>
             <?php html_inputbox("folder_defaults_known_hosts", "folder_defaults.known_hosts", $pconfig['folder_defaults_known_hosts'], sprintf(gettext("Default setting for folder preference 'Use predefined hosts'. Hosts should be entered as single line of IP:port pairs (or DNSname:port pairs) comma-separated (no other delimiters allowed)."), ""), false, 80);?>
             <?php html_checkbox("folder_defaults_use_dht", "folder_defaults.use_dht", $pconfig['folder_defaults_use_dht'], gettext("Default setting for folder preference 'Search DHT network'."), gettext("Default is disabled."), false);?>
             <?php html_checkbox("folder_defaults_use_lan_broadcast", "folder_defaults.use_lan_broadcast", $pconfig['folder_defaults_use_lan_broadcast'], gettext("Default setting for folder preference 'Search LAN'."), gettext("Default is enabled."), false);?>
@@ -639,7 +651,7 @@ function as_change() {
             <?php html_inputbox("sync_trash_ttl", "sync_trash_ttl", $pconfig['sync_trash_ttl'], sprintf(gettext("Sets the number of days after reaching which files will be automatically deleted from the .SyncArchive folder. Default is %d days."), 30), false, 5);?>
         </table>
         <div id="remarks">
-            <?php html_remark("note", gettext("Note"), sprintf(gettext("These parameters will be added to %s."), "{$config['btsync']['rootfolder']}sync.conf")." ".sprintf(gettext("Please check the <a href='%s' target='_blank'>documentation</a>."), "http://sync-help.bittorrent.com/"));?>
+            <?php html_remark("note", gettext("Note"), sprintf(gettext("These parameters will be added to %s."), "{$configuration['rootfolder']}sync.conf")." ".sprintf(gettext("Please check the <a href='%s' target='_blank'>documentation</a>."), "http://sync-help.bittorrent.com/"));?>
         </div>
         <div id="submit">
 			<input id="save" name="save" type="submit" class="formbtn" value="<?=gettext("Save and Restart");?>"/>

@@ -2,7 +2,7 @@
 /* 
     btsync_start.php
 
-    Copyright (c) 2013 - 2016 Andreas Schmidhuber
+    Copyright (c) 2013 - 2017 Andreas Schmidhuber <info@a3s.at>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -31,26 +31,46 @@
  */
 require_once("config.inc");
 
-if (is_file("{$config['btsync']['rootfolder']}version.txt")) {
-    $file_version = exec("cat {$config['btsync']['rootfolder']}version.txt");
-    if ($config['btsync']['version'] != $file_version) {
-        $config['btsync']['version'] = $file_version;
-        write_config();        
+$rootfolder = dirname(__FILE__)."/";
+$config_file = "{$rootfolder}ext/btsync.conf";
+require_once("{$rootfolder}ext/extension-lib.inc");
+if (($configuration = ext_load_config($config_file)) === false) {
+    exec("logger btsync-extension: configuration file {$config_file} not found, startup aborted!");
+    exit;
+}
+
+if (is_file("{$configuration['rootfolder']}version.txt")) {
+    $file_version = exec("cat {$configuration['rootfolder']}version.txt");
+    if ($configuration['version'] != $file_version) {
+        $configuration['version'] = $file_version;
+		ext_save_config($config_file, $configuration);
     }
 }
 
-if ( !is_dir ( '/usr/local/www/ext/btsync')) { exec ("mkdir -p /usr/local/www/ext/btsync"); }
-mwexec ("cp {$config['btsync']['rootfolder']}ext/* /usr/local/www/ext/btsync/", true);
-mwexec ("cp -R {$config['btsync']['rootfolder']}locale-bts /usr/local/share/", true);
-if ( !is_link ( "/usr/local/www/btsync.php")) { exec ("ln -s /usr/local/www/ext/btsync/btsync.php /usr/local/www/btsync.php"); }
-if ( !is_link ( "/usr/local/www/btsync_log.php")) { exec ("ln -s /usr/local/www/ext/btsync/btsync_log.php /usr/local/www/btsync_log.php"); }
-if ( !is_link ( "/usr/local/www/btsync_log.inc")) { exec ("ln -s /usr/local/www/ext/btsync/btsync_log.inc /usr/local/www/btsync_log.inc"); }
-if ( !is_link ( "/usr/local/www/btsync_update.php")) { exec ("ln -s /usr/local/www/ext/btsync/btsync_update.php /usr/local/www/btsync_update.php"); }
-if ( !is_link ( "/usr/local/www/btsync_update_extension.php")) { exec ("ln -s /usr/local/www/ext/btsync/btsync_update_extension.php /usr/local/www/btsync_update_extension.php"); }
-if (isset($config['btsync']['enable'])) { 
-    exec("logger btsync: enabled, starting ...");
-    exec($config['btsync']['command']);
-    if (exec("ps acx | grep {$config['btsync']['product_executable']}")) { exec("logger btsync: startup OK"); }    
-    else { exec("logger btsync: startup NOT ok" ); } 
-}
+if (is_dir("/usr/local/www/ext/btsync")) mwexec("rm -R /usr/local/www/ext/btsync");		// cleanup of previous versions
+$return_val = 0;
+// create links to extension files
+$return_val += mwexec("mkdir -p /usr/local/www/ext");									// if it is the first extension we need this directory
+$return_val += mwexec("ln -sfw {$rootfolder}ext /usr/local/www/ext/btsync", true);
+$return_val += mwexec("ln -sfw {$rootfolder}locale-bts /usr/local/share/", true);
+$return_val += mwexec("ln -sfw {$rootfolder}ext/btsync.php /usr/local/www/btsync.php", true);
+$return_val += mwexec("ln -sfw {$rootfolder}ext/btsync_log.php /usr/local/www/btsync_log.php", true);
+$return_val += mwexec("ln -sfw {$rootfolder}ext/btsync_log.inc /usr/local/www/btsync_log.inc", true);
+$return_val += mwexec("ln -sfw {$rootfolder}ext/btsync_update.php /usr/local/www/btsync_update.php", true);
+$return_val += mwexec("ln -sfw {$rootfolder}ext/btsync_update_extension.php /usr/local/www/btsync_update_extension.php", true);
+if ($return_val != 0) mwexec("logger btsync-extension: error during startup, link creation failed with return value = {$return_val}");
+else if ($configuration['enable']) {
+	    mwexec("killall {$configuration['product_executable']}");
+		$check_hour = date("G");	    
+	    if ($configuration['enable_schedule'] && $configuration['schedule_prohibit'] && (($check_hour < $configuration['schedule_startup']) || ($check_hour >= $configuration['schedule_closedown']))) { 
+			mwexec("logger btsync-extension: {$configuration['product_executable']} start prohibited due to scheduler settings!"); 
+		}
+	    else {
+		    mwexec("logger btsync-extension: enabled, start {$configuration['product_executable']} ...");
+		    exec($configuration['command']);
+		    sleep(5);														// give time to startup
+		    if (exec("ps acx | grep {$configuration['product_executable']}")) { mwexec("logger btsync-extension: startup OK"); }
+		    else { mwexec("logger btsync-extension: startup NOT ok" ); }
+		}
+	}
 ?>

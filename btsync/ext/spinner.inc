@@ -1,7 +1,7 @@
 <!--
     spinner.inc
 
-    Copyright (c) 2015 - 2016 Andreas Schmidhuber
+    Copyright (c) 2015 - 2017 Andreas Schmidhuber <info@a3s.at>
     All rights reserved.
 
     Uses spin.js by Felix Gnass (fgnass) at http://spin.js.org

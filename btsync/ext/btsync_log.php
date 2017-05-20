@@ -2,7 +2,7 @@
 /*
 	btsync_log.php
 	
-    Copyright (c) 2013 - 2016 Andreas Schmidhuber
+    Copyright (c) 2013 - 2017 Andreas Schmidhuber <info@a3s.at>
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -41,12 +41,18 @@ if (empty($log))
 	$log = 0;
 
 bindtextdomain("nas4free", "/usr/local/share/locale-bts");
-$pgtitle = array(gettext("Extensions"), $config['btsync']['appname']." ".$config['btsync']['version'], gettext("Log"));
+
+$config_file = "ext/btsync/btsync.conf";
+require_once("ext/btsync/extension-lib.inc");
+if (($configuration = ext_load_config($config_file)) === false) $input_errors[] = sprintf(gettext("Configuration file %s not found!"), "btsync.conf");
+if (!isset($configuration['rootfolder']) && !is_dir($configuration['rootfolder'] )) $input_errors[] = gettext("Extension installed with fault");
+
+$pgtitle = array(gettext("Extensions"), $configuration['appname']." ".$configuration['version'], gettext("Log"));
 
 if (isset($_POST['save']) && $_POST['save']) {
-    $config['btsync']['filter_icf'] = isset($_POST['filter_icf']) ? true : false;
-    $config['btsync']['filter_str'] = !empty($_POST['filter_str']) ? htmlspecialchars($_POST['filter_str']) : false;
-    $savemsg = get_std_save_message(write_config());
+    $configuration['filter_icf'] = isset($_POST['filter_icf']) ? true : false;
+    $configuration['filter_str'] = !empty($_POST['filter_str']) ? htmlspecialchars($_POST['filter_str']) : false;
+	$savemsg = get_std_save_message(ext_save_config($config_file, $configuration));
 }
 
 if (isset($_POST['clear']) && $_POST['clear']) {
@@ -91,8 +97,8 @@ function log_change() {
             <?php if (!empty($savemsg)) print_info_box($savemsg);?>
             <table width="100%" border="0" cellpadding="6" cellspacing="0">
                 <?php html_titleline(gettext("Filter"));?>
-                <?php html_checkbox("filter_icf", gettext("Incoming connections"), isset($config['btsync']['filter_icf']) ? true : false, gettext("Hide \"Incoming connection from\" messages."), false );?>
-                <?php html_inputbox("filter_str", gettext("Filter string"), !empty($config['btsync']['filter_str']) ? $config['btsync']['filter_str'] : "", gettext("Enter filter string (case sensitive) and hit \"Save Filter\" button to use the filter string permanently."), false, 15);?>
+                <?php html_checkbox("filter_icf", gettext("Incoming connections"), $configuration['filter_icf'], gettext("Hide \"Incoming connection from\" messages."), false );?>
+                <?php html_inputbox("filter_str", gettext("Filter string"), !empty($configuration['filter_str']) ? $configuration['filter_str'] : "", gettext("Enter filter string (case sensitive) and hit \"Save Filter\" button to use the filter string permanently."), false, 15);?>
                 <?php html_separator();?>
             </table>
     		<select id="log" class="formfld" onchange="log_change()" name="log">
