@@ -434,11 +434,7 @@ if (!is_file("{$configuration['rootfolder']}version_server.txt") || filemtime("{
 	$return_val = mwexec("fetch -o {$configuration['rootfolder']}version_server.txt https://raw.github.com/crestAT/nas4free-bittorrent-sync/master/btsync/version.txt", false);
 	if ($return_val == 0) {
 	    $server_version = exec("cat {$configuration['rootfolder']}version_server.txt");
-<<<<<<< HEAD
 	    if ($server_version != $configuration['version']) $savemsg .= sprintf(gettext("New extension version %s available, push '%s' button to install the new version!"), $server_version, gettext("Extension Maintenance"));
-=======
-	    if ($server_version != $current_version) $savemsg .= sprintf(gettext("New extension version %s available, push '%s' button to install the new version!"), $server_version, gettext("Extension Maintenance"));
->>>>>>> origin/master
 	}
 }
 
