@@ -29,7 +29,11 @@
     of the authors and should not be interpreted as representing official policies,
     either expressed or implied, of the FreeBSD Project.
 */
+<<<<<<< HEAD
 $version = "v0.7.2.1";							// extension version
+=======
+$version = "v0.7.2";							// extension version
+>>>>>>> origin/master
 $appname = "BitTorrent Sync";
 $config_name = "btsync";
 $version_striped = str_replace(".", "", $version);

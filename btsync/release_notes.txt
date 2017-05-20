@@ -1,7 +1,10 @@
 ﻿Version Date        Description
+<<<<<<< HEAD
 0.7.2.1 2017.05.20  F: error while parsing config file: Invalid key 'folder_defaults_delete_to_trash' -> depreciated in rslsync 2.5.2
                     F: false info 'New extension version x.y.z available' on Extensions > BitTorrent Sync 0.7.2 > Configuration
 
+=======
+>>>>>>> origin/master
 0.7.2   2017.03.04  C: made extension PHP 7.1 aware
                     N: use dedicated config file
                     N: switch System Startup in Maintenance > Daily Schedule to prohibit Synthing start 
