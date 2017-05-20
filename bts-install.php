@@ -115,8 +115,10 @@ else {
     $configuration['size'] = exec("fetch -s {$configuration['download_url']}");
     if ($configuration['product_version'] == '') { $configuration['product_version'] = 'n/a'; }
     if ($configuration['size'] == '') { $configuration['size'] = 'n/a'; }
-	echo "{$configuration['appname']} Extension Version {$configuration['version']} installed";
-	echo "\nResilio Sync Version {$configuration['product_version']} installed\n";
+	if ($new_installation) {
+		echo "{$configuration['appname']} Extension Version {$configuration['version']} installed";
+		echo "\nResilio Sync Version {$configuration['product_version']} installed\n";
+	} 
 }
 
 ext_remove_rc_commands($config_name);
