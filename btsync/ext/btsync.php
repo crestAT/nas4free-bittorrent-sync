@@ -2,7 +2,7 @@
 /* 
     btsync.php
 
-    Copyright (c) 2013 - 2017 Andreas Schmidhuber <info@a3s.at>
+    Copyright (c) 2013 - 2018 Andreas Schmidhuber
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -24,15 +24,14 @@
     ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-    The views and conclusions contained in the software and documentation are those
-    of the authors and should not be interpreted as representing official policies,
-    either expressed or implied, of the FreeBSD Project.
  */
 require("auth.inc");
 require("guiconfig.inc");
 
-bindtextdomain("nas4free", "/usr/local/share/locale-bts");
+$domain = strtolower(get_product_name());
+$localeOSDirectory = "/usr/local/share/locale";
+$localeExtDirectory = "/usr/local/share/locale-bts";
+bindtextdomain($domain, $localeExtDirectory);
 
 $config_file = "ext/btsync/btsync.conf";
 require_once("ext/btsync/extension-lib.inc");
@@ -162,13 +161,13 @@ if (isset($_POST['save']) && $_POST['save']) {
             $sync_conf['lan_encrypt_data'] = isset($_POST['lan_encrypt_data']) ? true : false;
             $sync_conf['lan_use_tcp'] = isset($_POST['lan_use_tcp']) ? true : false;
             $sync_conf['log_size'] = (is_numeric($_POST['log_size']) ? (int)$_POST['log_size'] : 10);
-            unset($sync_conf['max_file_size_diff_for_patching']); // parameter no longer valid => BTS v2.3
+            unset($sync_conf['max_file_size_diff_for_patching']); 		// parameter no longer valid => BTS v2.3
             $sync_conf['max_file_size_for_versioning'] = (is_numeric($_POST['max_file_size_for_versioning']) ? (int)$_POST['max_file_size_for_versioning'] : 1000);
             $sync_conf['peer_expiration_days'] = (is_numeric($_POST['peer_expiration_days']) ? (int)$_POST['peer_expiration_days'] : 7);
             $sync_conf['profiler_enabled'] = isset($_POST['profiler_enabled']) ? true : false;
             $sync_conf['rate_limit_local_peers'] = isset($_POST['rate_limit_local_peers']) ? true : false;
-            $sync_conf['recv_buf_size'] = (is_numeric($_POST['recv_buf_size']) ? (int)$_POST['recv_buf_size'] : 5);
-            $sync_conf['send_buf_size'] = (is_numeric($_POST['send_buf_size']) ? (int)$_POST['send_buf_size'] : 5);
+            unset($sync_conf['recv_buf_size']);							// parameter no longer valid => BTS v2.6
+            unset($sync_conf['send_buf_size']);							// parameter no longer valid => BTS v2.6
             $sync_conf['sync_max_time_diff'] = (is_numeric($_POST['sync_max_time_diff']) ? (int)$_POST['sync_max_time_diff'] : 600);
             $sync_conf['sync_trash_ttl'] = (is_numeric($_POST['sync_trash_ttl']) ? (int)$_POST['sync_trash_ttl'] : 30);
     
@@ -394,8 +393,6 @@ $pconfig['max_file_size_for_versioning'] = !empty($sync_conf['max_file_size_for_
 $pconfig['peer_expiration_days'] = !empty($sync_conf['peer_expiration_days']) ? $sync_conf['peer_expiration_days'] : 7;
 $pconfig['profiler_enabled'] = isset($sync_conf['profiler_enabled']) ? $sync_conf['profiler_enabled'] : false;
 $pconfig['rate_limit_local_peers'] = isset($sync_conf['rate_limit_local_peers']) ? $sync_conf['rate_limit_local_peers'] : false;
-$pconfig['recv_buf_size'] = !empty($sync_conf['recv_buf_size']) ? $sync_conf['recv_buf_size'] : 5;
-$pconfig['send_buf_size'] = !empty($sync_conf['send_buf_size']) ? $sync_conf['send_buf_size'] : 5;
 $pconfig['sync_max_time_diff'] = !empty($sync_conf['sync_max_time_diff']) ? $sync_conf['sync_max_time_diff'] : 600;
 $pconfig['sync_trash_ttl'] = !empty($sync_conf['sync_trash_ttl']) ? $sync_conf['sync_trash_ttl'] : 30;
 
@@ -438,7 +435,7 @@ if (!is_file("{$configuration['rootfolder']}version_server.txt") || filemtime("{
 	}
 }
 
-bindtextdomain("nas4free", "/usr/local/share/locale");
+bindtextdomain($domain, $localeOSDirectory);
 include("fbegin.inc");?>  
 <script type="text/javascript">//<![CDATA[
 $(document).ready(function(){
@@ -488,8 +485,6 @@ function enable_change(enable_change) {
     document.iform.peer_expiration_days.disabled = endis;
     document.iform.profiler_enabled.disabled = endis;
 	document.iform.rate_limit_local_peers.disabled = endis;
-	document.iform.recv_buf_size.disabled = endis;
-	document.iform.send_buf_size.disabled = endis;
 	document.iform.sync_max_time_diff.disabled = endis;
 	document.iform.sync_trash_ttl.disabled = endis;
 }
@@ -522,8 +517,6 @@ function as_change() {
     		showElementById('peer_expiration_days_tr','hide');
     		showElementById('profiler_enabled_tr','hide');
     		showElementById('rate_limit_local_peers_tr','hide');
-    		showElementById('recv_buf_size_tr','hide');
-    		showElementById('send_buf_size_tr','hide');
     		showElementById('sync_max_time_diff_tr','hide');
     		showElementById('sync_trash_ttl_tr','hide');
 			break;
@@ -554,8 +547,6 @@ function as_change() {
     		showElementById('peer_expiration_days_tr','show');
     		showElementById('profiler_enabled_tr','show');
     		showElementById('rate_limit_local_peers_tr','show');
-    		showElementById('recv_buf_size_tr','show');
-    		showElementById('send_buf_size_tr','show');
     		showElementById('sync_max_time_diff_tr','show');
     		showElementById('sync_trash_ttl_tr','show');
 			break;
@@ -569,7 +560,7 @@ function as_change() {
 <!-- use: onsubmit="spinner()" within the form tag -->
 
 <form action="btsync.php" method="post" name="iform" id="iform" onsubmit="spinner()">
-<?php bindtextdomain("nas4free", "/usr/local/share/locale-bts"); ?>
+<?php bindtextdomain($domain, $localeExtDirectory); ?>
     <table width="100%" border="0" cellpadding="0" cellspacing="0">
 	<tr><td class="tabnavtbl">
 		<ul id="tabnav">
@@ -596,7 +587,7 @@ function as_change() {
                 $ipaddr = get_ipaddr($if);
                 $url = htmlspecialchars("http://{$ipaddr}:{$pconfig['port']}");
                 $text = "<a href='{$url}' target='_blank'>{$url}</a>";
-                html_text("url", gettext("WebGUI")." ".gettext("URL"), $text);
+                html_text("url", gettext("WebGUI")." ".gettext("URL"), $text);        
             ?>
 			<?php html_separator();?>
         	<?php html_titleline_checkbox("enable", $configuration['appname'], !empty($pconfig['enable']) ? true : false, gettext("Enable"), "enable_change(false)");?>
@@ -645,8 +636,6 @@ function as_change() {
             <?php html_inputbox("peer_expiration_days", "peer_expiration_days", $pconfig['peer_expiration_days'], sprintf(gettext("Amount of days to pass before peer is removed from peer list. Default is %d days."), 7), false, 5);?>
             <?php html_checkbox("profiler_enabled", "profiler_enabled", $pconfig['profiler_enabled'], gettext("Requires client restart to activate. Starts recording data for speed issue analysis. Data is stored in proffer.dat in storage folder, rotated every 10 minutes."), gettext("Default is disabled."), false);?>
             <?php html_checkbox("rate_limit_local_peers", "rate_limit_local_peers", $pconfig['rate_limit_local_peers'], gettext("Applies speed limits to the peers in local network."), gettext("Default is disabled."), false);?>
-            <?php html_inputbox("recv_buf_size", "recv_buf_size", $pconfig['recv_buf_size'], sprintf(gettext("The amount of real memory that will be used for cached receive operations, can be set in the range from %d to %d MB. Default is %d MB."), 1, 100, 5), false, 5);?>
-            <?php html_inputbox("send_buf_size", "send_buf_size", $pconfig['send_buf_size'], sprintf(gettext("The amount of real memory that will be used for cached send operations, can be set in the range from %d to %d MB. Default is %d MB."), 1, 100, 5), false, 5);?>
             <?php html_inputbox("sync_max_time_diff", "sync_max_time_diff", $pconfig['sync_max_time_diff'], sprintf(gettext("Maximum allowed time difference between devices. Default is %d seconds."), 600), false, 5);?>
             <?php html_inputbox("sync_trash_ttl", "sync_trash_ttl", $pconfig['sync_trash_ttl'], sprintf(gettext("Sets the number of days after reaching which files will be automatically deleted from the .SyncArchive folder. Default is %d days."), 30), false, 5);?>
         </table>

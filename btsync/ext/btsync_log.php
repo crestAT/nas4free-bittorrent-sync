@@ -2,7 +2,7 @@
 /*
 	btsync_log.php
 	
-    Copyright (c) 2013 - 2017 Andreas Schmidhuber <info@a3s.at>
+    Copyright (c) 2013 - 2018 Andreas Schmidhuber
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -24,10 +24,6 @@
     ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-    The views and conclusions contained in the software and documentation are those
-    of the authors and should not be interpreted as representing official policies,
-    either expressed or implied, of the FreeBSD Project.
 */
 require("auth.inc");
 require("guiconfig.inc");
@@ -40,7 +36,10 @@ if (isset($_POST['log']))
 if (empty($log))
 	$log = 0;
 
-bindtextdomain("nas4free", "/usr/local/share/locale-bts");
+$domain = strtolower(get_product_name());
+$localeOSDirectory = "/usr/local/share/locale";
+$localeExtDirectory = "/usr/local/share/locale-bts";
+bindtextdomain($domain, $localeExtDirectory);
 
 $config_file = "ext/btsync/btsync.conf";
 require_once("ext/btsync/extension-lib.inc");
@@ -70,7 +69,7 @@ if (isset($_POST['refresh']) && $_POST['refresh']) {
 	header("Location: btsync_log.php?log={$log}");
 	exit;
 }
-bindtextdomain("nas4free", "/usr/local/share/locale");
+bindtextdomain($domain, $localeOSDirectory);
 ?>
 <?php include("fbegin.inc");?>
 <script type="text/javascript">
@@ -82,7 +81,7 @@ function log_change() {
 //-->
 </script>
 <form action="btsync_log.php" method="post" name="iform" id="iform">
-<?php bindtextdomain("nas4free", "/usr/local/share/locale-bts"); ?>
+<?php bindtextdomain($domain, $localeExtDirectory); ?>
     <table width="100%" border="0" cellpadding="0" cellspacing="0">
     	<tr><td class="tabnavtbl">
     		<ul id="tabnav">

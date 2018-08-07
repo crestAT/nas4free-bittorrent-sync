@@ -1,4 +1,10 @@
 ﻿Version Date        Description
+0.7.3   2018.08.07  N: avoid alarming for Extended GUI service monitoring if RSLSync is stopped due to daily schedule
+                    N: Kurdish translation
+                    F: GUI translations not working due to name change to XigmaNAS
+                    F: not working backup of product executable 
+                    F: error while parsing config file: Invalid key 'recv_buf_size' & 'send_buf_size' -> depreciated in rslsync 2.6
+
 0.7.2.1 2017.05.20  F: error while parsing config file: Invalid key 'folder_defaults_delete_to_trash' -> depreciated in rslsync 2.5.2
                     F: false info 'New extension version x.y.z available' on Extensions > BitTorrent Sync 0.7.2 > Configuration
 

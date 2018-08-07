@@ -2,7 +2,7 @@
 /* 
     btsync_start.php
 
-    Copyright (c) 2013 - 2017 Andreas Schmidhuber <info@a3s.at>
+    Copyright (c) 2013 - 2018 Andreas Schmidhuber
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -24,10 +24,6 @@
     ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-    The views and conclusions contained in the software and documentation are those
-    of the authors and should not be interpreted as representing official policies,
-    either expressed or implied, of the FreeBSD Project.
  */
 require_once("config.inc");
 
@@ -58,15 +54,30 @@ $return_val += mwexec("ln -sfw {$rootfolder}ext/btsync_log.php /usr/local/www/bt
 $return_val += mwexec("ln -sfw {$rootfolder}ext/btsync_log.inc /usr/local/www/btsync_log.inc", true);
 $return_val += mwexec("ln -sfw {$rootfolder}ext/btsync_update.php /usr/local/www/btsync_update.php", true);
 $return_val += mwexec("ln -sfw {$rootfolder}ext/btsync_update_extension.php /usr/local/www/btsync_update_extension.php", true);
+// check for product name and eventually rename translation files for new product name (XigmaNAS)
+$domain = strtolower(get_product_name());
+if ($domain <> "nas4free") {
+	$return_val += mwexec("find {$rootfolder}locale-bts -name nas4free.mo -execdir mv nas4free.mo {$domain}.mo \;", true);
+}
 if ($return_val != 0) mwexec("logger btsync-extension: error during startup, link creation failed with return value = {$return_val}");
 else if ($configuration['enable']) {
 	    mwexec("killall {$configuration['product_executable']}");
 		$check_hour = date("G");	    
 	    if ($configuration['enable_schedule'] && $configuration['schedule_prohibit'] && (($check_hour < $configuration['schedule_startup']) || ($check_hour >= $configuration['schedule_closedown']))) { 
 			mwexec("logger btsync-extension: {$configuration['product_executable']} start prohibited due to scheduler settings!"); 
+			touch("/tmp/extended-gui_btsync_schedule_stopped.lock");		// to avoid alarming for Extended GUI service monitoring
 		}
 	    else {
 		    mwexec("logger btsync-extension: enabled, start {$configuration['product_executable']} ...");
+		    if (is_file("/tmp/extended-gui_btsync_schedule_stopped.lock")) unlink("/tmp/extended-gui_btsync_schedule_stopped.lock");
+		    if (is_file("{$configuration['storage_path']}sync.log.old")) {
+				$return_val = mwexec("rm {$configuration['storage_path']}sync.log.old", true);	// cleanup old log
+				if ($return_val != 0) mwexec("logger btsync-extension: error cleanup old log: {$configuration['storage_path']}sync.log.old");
+				else {
+				    $return_val = mwexec("mv {$configuration['storage_path']}sync.log {$configuration['storage_path']}sync.log.old", true);						// save current log
+					if ($return_val != 0) mwexec("logger btsync-extension: error backup log file");
+				}
+			} 
 		    exec($configuration['command']);
 		    sleep(5);														// give time to startup
 		    if (exec("ps acx | grep {$configuration['product_executable']}")) { mwexec("logger btsync-extension: startup OK"); }

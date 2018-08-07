@@ -2,7 +2,7 @@
 /* 
     bts_install.php
      
-    Copyright (c) 2013 - 2017 Andreas Schmidhuber <info@a3s.at>
+    Copyright (c) 2013 - 2018 Andreas Schmidhuber
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -24,12 +24,8 @@
     ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-    The views and conclusions contained in the software and documentation are those
-    of the authors and should not be interpreted as representing official policies,
-    either expressed or implied, of the FreeBSD Project.
 */
-$version = "v0.7.2.1";							// extension version
+$version = "v0.7.3";							// extension version
 $appname = "BitTorrent Sync";
 $config_name = "btsync";
 $version_striped = str_replace(".", "", $version);
@@ -55,6 +51,7 @@ if ($release[0] >= 9.3) $verify_hostname = "--no-verify-hostname";
 else $verify_hostname = "";
 
 exec("killall btsync");		// to be sure rslsync can startup successfully
+exec("killall rslsync");	// to be sure rslsync can startup successfully
 
 $return_val = mwexec("fetch {$verify_hostname} -vo {$install_dir}master.zip 'https://github.com/crestAT/nas4free-bittorrent-sync/releases/download/{$version}/bts-{$version_striped}.zip'", false);
 if ($return_val == 0) {

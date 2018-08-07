@@ -2,7 +2,7 @@
 /*
     btsync_update.php
     
-    Copyright (c) 2013 - 2017 Andreas Schmidhuber <info@a3s.at>
+    Copyright (c) 2013 - 2018 Andreas Schmidhuber
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -24,15 +24,14 @@
     ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-    The views and conclusions contained in the software and documentation are those
-    of the authors and should not be interpreted as representing official policies,
-    either expressed or implied, of the FreeBSD Project.
  */
 require("auth.inc");
 require("guiconfig.inc");
 
-bindtextdomain("nas4free", "/usr/local/share/locale-bts");
+$domain = strtolower(get_product_name());
+$localeOSDirectory = "/usr/local/share/locale";
+$localeExtDirectory = "/usr/local/share/locale-bts";
+bindtextdomain($domain, $localeExtDirectory);
 
 $config_file = "ext/btsync/btsync.conf";
 require_once("ext/btsync/extension-lib.inc");
@@ -105,14 +104,17 @@ if (isset($_POST['install_new']) && $_POST['install_new']) {
         $return_val = 0;
         while( $return_val == 0 ) { sleep(1); exec("ps acx | grep {$configuration['product_executable']}", $output, $return_val); }
     }
+	// backup current executable
+	copy("{$configuration['rootfolder']}{$configuration['product_executable']}", "{$configuration['backupfolder']}{$configuration['product_executable']}-{$configuration['product_version']}");
     if (!copy($configuration['updatefolder']."{$configuration['product_executable']}", $configuration['rootfolder']."{$configuration['product_executable']}")) { $input_errors[] = gettext("Could not install new version!"); }
     else {
         exec("chmod +x {$configuration['rootfolder']}{$configuration['product_executable']}");
-        if (isset($configuration['enable'])) { exec($configuration['command']); }
+        if (isset($configuration['enable'])) exec($configuration['command']);
         $configuration['product_version'] = $pconfig['product_version_new'];
         $configuration['size'] = $configuration['size_new'];
-	   	exec ("cp {$configuration['product_executable']} {$configuration['backupfolder']}{$configuration['product_executable']}-{$configuration['product_version']}");
 		ext_save_config($config_file, $configuration);
+		// backup new executable
+		copy("{$configuration['rootfolder']}{$configuration['product_executable']}", "{$configuration['backupfolder']}{$configuration['product_executable']}-{$configuration['product_version']}");
         $savemsg = gettext("New version installed!");
     }	
 }
@@ -141,7 +143,7 @@ if ( isset( $_POST['install_backup'] ) && $_POST['install_backup'] ) {
             }
             if (!copy($_POST['installfile'], $configuration['rootfolder']."{$configuration['product_executable']}")) { $input_errors[] = gettext("Could not install backup version!"); }
             else {
-                if (isset($configuration['enable'])) { exec($configuration['command']); }
+                if (isset($configuration['enable'])) exec($configuration['command']);
     			$configuration['product_version'] = exec ("{$configuration['rootfolder']}{$configuration['product_executable']} --help | awk '/Sync/ {print $3}'");
                 $pconfig['product_version_new'] = "n/a"; 
                 $configuration['product_version_new'] = "n/a";
@@ -149,7 +151,7 @@ if ( isset( $_POST['install_backup'] ) && $_POST['install_backup'] ) {
                 $configuration['size_new'] = "n/a";
 				exec ("cp {$configuration['product_executable']} {$configuration['backupfolder']}{$configuration['product_executable']}-{$configuration['product_version']}");
 				ext_save_config($config_file, $configuration);
-                if (isset($configuration['enable'])) { $savemsg = gettext("Backup version installed!"); }
+                if (isset($configuration['enable'])) $savemsg = gettext("Backup version installed!");
                 else { $savemsg = sprintf(gettext("Backup version installed! Go to %s and enable, save & restart to run %s !"), gettext('Configuration'), $configuration['appname']); }
             }
         }
@@ -205,7 +207,7 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
             	$cronjob['all_months'] = $a_cronjob[$cnid]['all_months'];
             	$cronjob['all_weekdays'] = $a_cronjob[$cnid]['all_weekdays'];
             	$cronjob['who'] = 'root';
-            	$cronjob['command'] = $configuration['command']." && logger btsync: scheduled startup";
+            	$cronjob['command'] = $configuration['command']." && logger btsync-extension: scheduled startup";
             } else {
             	$cronjob['enable'] = true;
             	$cronjob['uuid'] = uuid();
@@ -221,7 +223,7 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
             	$cronjob['all_months'] = 1;
             	$cronjob['all_weekdays'] = 1;
             	$cronjob['who'] = 'root';
-            	$cronjob['command'] = $configuration['command']." && logger btsync: scheduled startup";
+            	$cronjob['command'] = $configuration['command']." && logger btsync-extension: scheduled startup";
                 $configuration['schedule_uuid_startup'] = $cronjob['uuid'];
             }
             if (isset($uuid) && (FALSE !== $cnid)) {
@@ -254,7 +256,7 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
             	$cronjob['all_months'] = $a_cronjob[$cnid]['all_months'];
             	$cronjob['all_weekdays'] = $a_cronjob[$cnid]['all_weekdays'];
             	$cronjob['who'] = 'root';
-            	$cronjob['command'] = "killall {$configuration['product_executable']} && logger btsync: scheduled closedown";
+            	$cronjob['command'] = "touch /tmp/extended-gui_btsync_schedule_stopped.lock && killall {$configuration['product_executable']} && logger btsync-extension: scheduled closedown";
             } else {
             	$cronjob['enable'] = true;
             	$cronjob['uuid'] = uuid();
@@ -270,7 +272,7 @@ if ( isset( $_POST['schedule'] ) && $_POST['schedule'] ) {
             	$cronjob['all_months'] = 1;
             	$cronjob['all_weekdays'] = 1;
             	$cronjob['who'] = 'root';
-            	$cronjob['command'] = "killall {$configuration['product_executable']} && logger btsync: scheduled closedown";
+            	$cronjob['command'] = "touch /tmp/extended-gui_btsync_schedule_stopped.lock && killall {$configuration['product_executable']} && logger btsync-extension: scheduled closedown";
                 $configuration['schedule_uuid_closedown'] = $cronjob['uuid'];
             }
             if (isset($uuid) && (FALSE !== $cnid)) {
@@ -376,7 +378,7 @@ if (!is_file("{$configuration['rootfolder']}version_server.txt") || filemtime("{
 	}
 }
 
-bindtextdomain("nas4free", "/usr/local/share/locale");
+bindtextdomain($domain, $localeOSDirectory);
 include("fbegin.inc");?>
 <script type="text/javascript">//<![CDATA[
 $(document).ready(function(){
@@ -419,7 +421,7 @@ function enable_change(enable_change) {
 <!-- use: onsubmit="spinner()" within the form tag -->
 
 <form action="btsync_update.php" method="post" name="iform" id="iform" onsubmit="spinner()">
-<?php bindtextdomain("nas4free", "/usr/local/share/locale-bts"); ?>
+<?php bindtextdomain($domain, $localeExtDirectory); ?>
 <table width="100%" border="0" cellpadding="0" cellspacing="0">
 	<tr><td class="tabnavtbl">
 		<ul id="tabnav">
