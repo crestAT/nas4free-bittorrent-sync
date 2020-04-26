@@ -176,7 +176,7 @@ if (isset($_POST['save']) && $_POST['save']) {
             file_put_contents($configuration['rootfolder']."sync.conf", json_encode($sync_conf, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ));
             if (json_last_error() > 0) { $input_errors[] = gettext('Error during encoding/writing sync.conf file with error number: ').json_last_error(); };
     
-            killbyname($configuration['product_executable']);
+			mwexec("/usr/bin/killall " . escapeshellarg($configuration['product_executable']));
             $return_val = 0;
             while( $return_val == 0 ) { sleep(1); exec("ps acx | grep {$configuration['product_executable']}", $output, $return_val); }
             unset ($output);
@@ -262,7 +262,7 @@ if (isset($_POST['save']) && $_POST['save']) {
             }   // end of activate cronjobs
         }   // end of enable extension
 		else { 
-            killbyname($configuration['product_executable']);
+			mwexec("/usr/bin/killall " . escapeshellarg($configuration['product_executable']));
 			$savemsg = $savemsg." ".$configuration['appname'].gettext(" is now disabled!"); 
             $configuration['enable'] = isset($_POST['enable']) ? true : false;
             if (isset($configuration['enable_schedule'])) {  // if cronjobs exists -> deactivate

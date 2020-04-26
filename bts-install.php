@@ -25,7 +25,7 @@
     (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-$version = "v0.7.3";							// extension version
+$version = "v0.7.3.1";							// extension version
 $appname = "BitTorrent Sync";
 $config_name = "btsync";
 $version_striped = str_replace(".", "", $version);
