@@ -374,8 +374,13 @@ $pconfig['config_refresh_interval'] = !empty($sync_conf['config_refresh_interval
 $pconfig['disk_low_priority'] = isset($sync_conf['disk_low_priority']) ? $sync_conf['disk_low_priority'] : true;
 $pconfig['listening_port'] = !empty($sync_conf['listening_port']) ? $sync_conf['listening_port'] : 0;
 $pconfig['external_port'] = !empty($sync_conf['external_port']) ? $sync_conf['external_port'] : 0;
-if (isset($sync_conf['folder_defaults.delete_to_trash'])) {				// depreciated in rslsync 2.5.2  
-	unset ($sync_conf['folder_defaults.delete_to_trash']); 	
+if (isset($sync_conf['folder_defaults.delete_to_trash'])) {				// depreciated in rslsync 2.5.2
+	unset ($sync_conf['folder_defaults.delete_to_trash']);
+    file_put_contents($configuration['rootfolder']."sync.conf", json_encode($sync_conf, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ));
+    if (json_last_error() > 0) { $input_errors[] = gettext('Error during encoding/writing sync.conf file with error number: ').json_last_error(); };
+}
+if (isset($sync_conf['folder_defaults.use_lan_broadcast'])) {			// depreciated in rslsync 2.7
+	unset ($sync_conf['folder_defaults.use_lan_broadcast']);
     file_put_contents($configuration['rootfolder']."sync.conf", json_encode($sync_conf, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ));
     if (json_last_error() > 0) { $input_errors[] = gettext('Error during encoding/writing sync.conf file with error number: ').json_last_error(); };
 }
