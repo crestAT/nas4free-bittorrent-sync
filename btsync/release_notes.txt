@@ -1,4 +1,10 @@
 ﻿Version Date        Description
+0.7.4	2020.06.03  F: error while parsing config file: Invalid key 'folder_defaults.use_lan_broadcast' -> depreciated in rslsync 2.7
+                    C: update Chinese language
+                    C: update French language
+
+0.7.3.1	2020.04.26  F: function 'killbyname' no longer exists in firmware lib, use killall
+
 0.7.3   2018.08.07  N: avoid alarming for Extended GUI service monitoring if RSLSync is stopped due to daily schedule
                     N: Kurdish translation
                     F: GUI translations not working due to name change to XigmaNAS

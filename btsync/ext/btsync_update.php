@@ -2,7 +2,7 @@
 /*
     btsync_update.php
     
-    Copyright (c) 2013 - 2018 Andreas Schmidhuber
+    Copyright (c) 2013 - 2020 Andreas Schmidhuber
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -100,7 +100,7 @@ if (isset($_POST['get_file']) && $_POST['get_file']) {
 
 if (isset($_POST['install_new']) && $_POST['install_new']) {
     if (isset($configuration['enable'])) { 
-		killbyname($configuration['product_executable']);
+		mwexec("/usr/bin/killall " . escapeshellarg($configuration['product_executable']));
         $return_val = 0;
         while( $return_val == 0 ) { sleep(1); exec("ps acx | grep {$configuration['product_executable']}", $output, $return_val); }
     }
@@ -137,7 +137,7 @@ if ( isset( $_POST['install_backup'] ) && $_POST['install_backup'] ) {
     else {
         if (is_file($_POST['installfile'])) {
             if (isset($configuration['enable'])) { 
-	            killbyname($configuration['product_executable']);
+				mwexec("/usr/bin/killall " . escapeshellarg($configuration['product_executable']));
                 $return_val = 0;
                 while( $return_val == 0 ) { sleep(1); exec("ps acx | grep {$configuration['product_executable']}", $output, $return_val); }
             }
@@ -415,11 +415,6 @@ function enable_change(enable_change) {
 
 //-->
 </script>
-<!-- The Spinner Elements -->
-<?php include("ext/btsync/spinner.inc");?>
-<script src="ext/btsync/spin.min.js"></script>
-<!-- use: onsubmit="spinner()" within the form tag -->
-
 <form action="btsync_update.php" method="post" name="iform" id="iform" onsubmit="spinner()">
 <?php bindtextdomain($domain, $localeExtDirectory); ?>
 <table width="100%" border="0" cellpadding="0" cellspacing="0">

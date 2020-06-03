@@ -2,7 +2,7 @@
 /* 
     btsync.php
 
-    Copyright (c) 2013 - 2018 Andreas Schmidhuber
+    Copyright (c) 2013 - 2020 Andreas Schmidhuber
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -154,7 +154,6 @@ if (isset($_POST['save']) && $_POST['save']) {
             $sync_conf['external_port'] = (is_numeric($_POST['external_port']) ? (int)$_POST['external_port'] : 0);
             $sync_conf['folder_defaults.known_hosts'] = !empty($_POST['folder_defaults_known_hosts']) ? str_replace(" ", "", rtrim($_POST['folder_defaults_known_hosts'],',')) : "";
             $sync_conf['folder_defaults.use_dht'] = isset($_POST['folder_defaults_use_dht']) ? true : false;
-            $sync_conf['folder_defaults.use_lan_broadcast'] = isset($_POST['folder_defaults_use_lan_broadcast']) ? true : false;
             $sync_conf['folder_defaults.use_relay'] = isset($_POST['folder_defaults_use_relay']) ? true : false;
             $sync_conf['folder_defaults.use_tracker'] = isset($_POST['folder_defaults_use_tracker']) ? true : false;
             $sync_conf['folder_rescan_interval'] = (is_numeric($_POST['folder_rescan_interval']) ? (int)$_POST['folder_rescan_interval'] : 600);
@@ -382,7 +381,6 @@ if (isset($sync_conf['folder_defaults.delete_to_trash'])) {				// depreciated in
 }
 $pconfig['folder_defaults_known_hosts'] = !empty($sync_conf['folder_defaults.known_hosts']) ? $sync_conf['folder_defaults.known_hosts'] : "";
 $pconfig['folder_defaults_use_dht'] = isset($sync_conf['folder_defaults.use_dht']) ? $sync_conf['folder_defaults.use_dht'] : false;
-$pconfig['folder_defaults_use_lan_broadcast'] = isset($sync_conf['folder_defaults.use_lan_broadcast']) ? $sync_conf['folder_defaults.use_lan_broadcast'] : true;
 $pconfig['folder_defaults_use_relay'] = isset($sync_conf['folder_defaults.use_relay']) ? $sync_conf['folder_defaults.use_relay'] : true;
 $pconfig['folder_defaults_use_tracker'] = isset($sync_conf['folder_defaults.use_tracker']) ? $sync_conf['folder_defaults.use_tracker'] : true;
 $pconfig['folder_rescan_interval'] = !empty($sync_conf['folder_rescan_interval']) ? $sync_conf['folder_rescan_interval'] : 600;
@@ -473,7 +471,6 @@ function enable_change(enable_change) {
     document.iform.external_port.disabled = endis;
     document.iform.folder_defaults_known_hosts.disabled = endis;
     document.iform.folder_defaults_use_dht.disabled = endis;
-    document.iform.folder_defaults_use_lan_broadcast.disabled = endis;
     document.iform.folder_defaults_use_relay.disabled = endis;
     document.iform.folder_defaults_use_tracker.disabled = endis;
 	document.iform.folder_rescan_interval.disabled = endis;
@@ -506,7 +503,6 @@ function as_change() {
     		showElementById('external_port_tr','hide');
     		showElementById('folder_defaults_known_hosts_tr','hide');
     		showElementById('folder_defaults_use_dht_tr','hide');
-    		showElementById('folder_defaults_use_lan_broadcast_tr','hide');
     		showElementById('folder_defaults_use_relay_tr','hide');
     		showElementById('folder_defaults_use_tracker_tr','hide');
     		showElementById('folder_rescan_interval_tr','hide');
@@ -536,7 +532,6 @@ function as_change() {
     		showElementById('external_port_tr','show');
     		showElementById('folder_defaults_known_hosts_tr','show');
     		showElementById('folder_defaults_use_dht_tr','show');
-    		showElementById('folder_defaults_use_lan_broadcast_tr','show');
     		showElementById('folder_defaults_use_relay_tr','show');
     		showElementById('folder_defaults_use_tracker_tr','show');
     		showElementById('folder_rescan_interval_tr','show');
@@ -554,11 +549,6 @@ function as_change() {
 }
 //-->
 </script>
-<!-- The Spinner Elements -->
-<?php include("ext/btsync/spinner.inc");?>
-<script src="ext/btsync/spin.min.js"></script>
-<!-- use: onsubmit="spinner()" within the form tag -->
-
 <form action="btsync.php" method="post" name="iform" id="iform" onsubmit="spinner()">
 <?php bindtextdomain($domain, $localeExtDirectory); ?>
     <table width="100%" border="0" cellpadding="0" cellspacing="0">
@@ -625,7 +615,6 @@ function as_change() {
             <?php html_inputbox("external_port", "external_port", $pconfig['external_port'], sprintf(gettext("External (i.e. relative to NAT) port value. Default is %d (not set)."), 0), false, 5);?>
             <?php html_inputbox("folder_defaults_known_hosts", "folder_defaults.known_hosts", $pconfig['folder_defaults_known_hosts'], sprintf(gettext("Default setting for folder preference 'Use predefined hosts'. Hosts should be entered as single line of IP:port pairs (or DNSname:port pairs) comma-separated (no other delimiters allowed)."), ""), false, 80);?>
             <?php html_checkbox("folder_defaults_use_dht", "folder_defaults.use_dht", $pconfig['folder_defaults_use_dht'], gettext("Default setting for folder preference 'Search DHT network'."), gettext("Default is disabled."), false);?>
-            <?php html_checkbox("folder_defaults_use_lan_broadcast", "folder_defaults.use_lan_broadcast", $pconfig['folder_defaults_use_lan_broadcast'], gettext("Default setting for folder preference 'Search LAN'."), gettext("Default is enabled."), false);?>
             <?php html_checkbox("folder_defaults_use_relay", "folder_defaults.use_relay", $pconfig['folder_defaults_use_relay'], gettext("Default setting for folder preference 'Use relay server when required'."), gettext("Default is enabled."), false);?>
             <?php html_checkbox("folder_defaults_use_tracker", "folder_defaults.use_tracker", $pconfig['folder_defaults_use_tracker'], gettext("Default setting for folder preference 'Use tracker server'."), gettext("Default is enabled."), false);?>
             <?php html_inputbox("folder_rescan_interval", "folder_rescan_interval", $pconfig['folder_rescan_interval'], sprintf(gettext("Sets a time interval for rescanning sync. Default is %d seconds."), 600), false, 5);?>

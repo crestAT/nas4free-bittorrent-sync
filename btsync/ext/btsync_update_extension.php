@@ -2,7 +2,7 @@
 /*
     btsync_update_extension.php
     
-    Copyright (c) 2013 - 2017 Andreas Schmidhuber <info@a3s.at>
+    Copyright (c) 2013 - 2020 Andreas Schmidhuber
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -79,7 +79,7 @@ function cronjob_process_updatenotification($mode, $data) {
 if (isset($_POST['ext_remove']) && $_POST['ext_remove']) {
     $install_dir = dirname($configuration['rootfolder']);
 // kill running process
-	killbyname($configuration['product_executable']);
+	mwexec("/usr/bin/killall " . escapeshellarg($configuration['product_executable']));
 // remove start/stop commands
 	ext_remove_rc_commands("btsync");
 	ext_remove_rc_commands($configuration['product_executable']);
@@ -143,11 +143,6 @@ function fetch_handler() {
 }
 //-->
 </script>
-<!-- The Spinner Elements -->
-<?php include("ext/btsync/spinner.inc");?>
-<script src="ext/btsync/spin.min.js"></script>
-<!-- use: onsubmit="spinner()" within the form tag -->
-
 <form action="btsync_update_extension.php" method="post" name="iform" id="iform" onsubmit="spinner()">
 <?php bindtextdomain($domain, $localeExtDirectory); ?>
 <table width="100%" border="0" cellpadding="0" cellspacing="0">

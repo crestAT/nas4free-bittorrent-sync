@@ -2,7 +2,7 @@
 /*
 	diag_log.inc
 
-    Copyright (c) 2013 - 2018 Andreas Schmidhuber
+    Copyright (c) 2013 - 2020 Andreas Schmidhuber
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
